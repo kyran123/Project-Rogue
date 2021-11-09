@@ -18,6 +18,8 @@ public class BattleManager : MonoBehaviour {
     public PileManager pileManager;
     public MenuManager menuManager;
 
+    public bool battleIsOver = false;
+
     void Start() {
         BattleManager.instance = this;
         List<Unit> units = new List<Unit>();
@@ -61,6 +63,7 @@ public class BattleManager : MonoBehaviour {
         foreach(Effect effect in unit.effects) {
             effect.reduceStackcount(unit);
         }
+        if(this.battleIsOver) return;
         if(unit.isEnemy()) unit.enemyAI.MoveSelection(unit, this.friendlyUnits);
 
         if(unit.moves.Count > 0) {
@@ -135,8 +138,12 @@ public class BattleManager : MonoBehaviour {
     }
 
     public void checkWinLossCondition() {
-        if(this.friendlyUnits.Count == 0) menuManager.LossScreen.SetActive(true);
+        if(this.friendlyUnits.Count == 0) {
+            this.battleIsOver = true;
+            menuManager.LossScreen.SetActive(true);
+        } 
         if(this.enemyUnits.Count == 0) {
+            this.battleIsOver = true;
             //When a battle is won -> show reward screen
         }
     }
