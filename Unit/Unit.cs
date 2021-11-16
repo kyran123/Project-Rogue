@@ -46,26 +46,30 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     }
     public void modifyHealth(int value) {
         this.health -= value; //doing damge or healing
+        if(this.health > this.maxHealth) this.health = this.maxHealth;
         if(this.health <= 0) { //unit dies
             this.health = 0;
+            this.cleanse();
             this.die();
+            return;
         }
         this.display.updateHealthBar(this.health, this.maxHealth);
+        if(value < 0) this.EventTrigger(TriggerType.Healed, value);
+        else this.EventTrigger(TriggerType.DamageReceived, value);
+        this.EventTrigger(TriggerType.HealthAbove);
+        this.EventTrigger(TriggerType.HealthLower);
+        this.display.updateSpeed(this.getSpeed());
     }
 
     public void receiveDamage(float value) {
         //Apply effects to base damage
         if(this.getEffectByType(EffectType.Frail) != null) value *= 1.25f;
         if(this.getEffectByType(EffectType.Resistance) != null) value *= 0.5f;
-        this.health -= (int)value;
-        if(this.health <= 0) { //unit dies
-            this.health = 0;
-            this.die();
-        }
-        this.display.updateHealthBar(this.health, this.maxHealth);
+        this.modifyHealth((int)value);
     }
 
     public void die() {
+        this.EventTrigger(TriggerType.OnDeath);
         this.gameObject.SetActive(false);
         BattleManager.instance.allUnits.Remove(this);
         BattleManager.instance.sortedUnits.Remove(this);
@@ -73,6 +77,24 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         else BattleManager.instance.friendlyUnits.Remove(this);
         BattleManager.instance.sortList(BattleManager.instance.allUnits);
         BattleManager.instance.checkWinLossCondition();
+    }
+
+    public void dealDamage(Unit target, Move move) {
+        if(this.calculateAttackDamage(move.damage) > target.Health) this.EventTrigger(TriggerType.OnKill);
+        target.receiveDamage(this.calculateAttackDamage(move.damage));
+
+        Effect effect = this.getEffectByType(EffectType.Lifesteal);
+        if(effect != null) {
+            this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage) * 0.2f));
+            effect.stackCount--;
+        }
+        this.EventTrigger(TriggerType.DamageDealt, move.damage);
+    }
+
+    public int calculateAttackDamage(float damage) {
+        if(this.getEffectByType(EffectType.Strength) != null) damage *= 1.25f;
+        if(this.getEffectByType(EffectType.Weak) != null) damage *= 0.75f;
+        return (int)damage;
     }
 
     [SerializeField]
@@ -97,6 +119,8 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void changeActionPoints(int value) {
         this.actionPoints -= value;
         if(this.actionPoints > this.MaxActionPoints) this.actionPoints = this.MaxActionPoints;
+        this.EventTrigger(TriggerType.APAbove);
+        this.EventTrigger(TriggerType.APLower);
     }
     #endregion
 
@@ -111,6 +135,12 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public int getSpeed() {
         int value = this.speed;
+        Skill speedSkill = this.getSkillByType(SkillType.Speed);
+        if(speedSkill != null) {
+            if(speedSkill.isValid(this)) {
+                value -= this.getSkillByType(SkillType.Speed).skillBonus;
+            }
+        }
         foreach(Effect effect in effects) {
             if(effect.type == EffectType.Haste) value += Mathf.RoundToInt(this.speed * 0.25f);
             if(effect.type == EffectType.Slow) value -= Mathf.RoundToInt(this.speed * 0.25f);
@@ -121,6 +151,8 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public void modifySpeed(int value) {
         this.speed -= value; //Negative speed is positive
+        this.EventTrigger(TriggerType.SpeedAbove);
+        this.EventTrigger(TriggerType.SpeedLower);
     } 
     #endregion
 
@@ -133,21 +165,18 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void addMove(Move move) {
         if(this.moves.Count >= maxMoves) return;
         this.moves.Add(move);
+        this.EventTrigger(TriggerType.MoveCount);
     }
 
     public void removeMove(Move move) {
         if(this.moves.Contains(move)) {
             moves.Remove(move);
+            this.EventTrigger(TriggerType.MoveCount);
         }
     }
     public void removeMoves() {
         this.moves = new List<Move>();
-    }
-
-    public int calculateAttackDamage(float damage) {
-        if(this.getEffectByType(EffectType.Strength) != null) damage *= 1.25f;
-        if(this.getEffectByType(EffectType.Weak) != null) damage *= 0.75f;
-        return (int)damage;
+        this.EventTrigger(TriggerType.MoveCount);
     }
     #endregion
 
@@ -157,8 +186,13 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public void addEffect(Effect effect) {
         if(effect.type == EffectType.Cleanse) return;
+        if(this.effects.Contains(effect)) {
+            int index = this.effects.IndexOf(effect);
+            this.effects[index].stackCount += effect.stackCount;
+        }
         this.effects.Add(effect);
         this.display.updateIcons(this.effects);
+        this.EventTrigger(TriggerType.Effect);
     }
 
     public Effect getEffectByType(EffectType type) {
@@ -170,14 +204,11 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         return null;
     }
 
-    public void dealDamage(Unit target, Move move) {
-        target.receiveDamage(this.calculateAttackDamage(move.damage));
-
-        Effect effect = this.getEffectByType(EffectType.Lifesteal);
-        if(effect != null) {
-            this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage) * 0.2f));
-            effect.stackCount--;
+    public bool hasEffect(EffectType effectType) {
+        foreach(Effect effect in this.effects) {
+            if(effect.type == effectType) return true;
         }
+        return false;
     }
 
     public void cleanse() {
@@ -205,4 +236,24 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     }
     #endregion
     
+    #region SKILLS
+    public List<Skill> skills = new List<Skill>();
+    public void EventTrigger(TriggerType type, int value = 0) {
+        foreach(Skill skill in this.skills) {
+            skill.eventTrigger(type, this, value);
+        }
+    }
+    public Skill getSkillByTriggerType(TriggerType type) {
+        foreach(Skill skill in this.skills) {
+            if(skill.getTriggerType() == type) return skill;
+        }
+        return null;
+    }
+    public Skill getSkillByType(SkillType type) {
+        foreach(Skill skill in this.skills) {
+            if(skill.skillType == type) return skill;
+        }
+        return null;
+    }
+    #endregion
 }

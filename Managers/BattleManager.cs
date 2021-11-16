@@ -20,6 +20,8 @@ public class BattleManager : MonoBehaviour {
 
     public bool battleIsOver = false;
 
+    public int drawCount = 0;
+
     void Start() {
         BattleManager.instance = this;
         List<Unit> units = new List<Unit>();
@@ -57,6 +59,13 @@ public class BattleManager : MonoBehaviour {
     }
 
     public void EndTurn() {
+        for(int i = this.handManager.cards.Count; i > 0; i--) {
+            this.discardCard(this.handManager.cards[i-1]);
+        }
+        EndTurn2();
+    }
+
+    public void EndTurn2() {
         this.sortList(this.sortedUnits);
         //Do unit move
         Unit unit = this.sortedUnits[0];
@@ -70,6 +79,7 @@ public class BattleManager : MonoBehaviour {
             foreach(Move move in unit.moves) {
                 foreach(Unit target in move.damageTargets) {
                     Unit targetedUnit = target;
+                    if(targetedUnit.Health <= 0) continue;
                     if(this.friendlyUnits.Contains(target)) {
                         foreach(Unit protectUnit in this.friendlyUnits) {
                             if(protectUnit.getEffectByType(EffectType.Protect) != null) targetedUnit = protectUnit;
@@ -105,7 +115,7 @@ public class BattleManager : MonoBehaviour {
         //Remove unit
         this.sortedUnits.Remove(this.sortedUnits[0]);
         if(this.sortedUnits.Count > 0){ 
-            this.EndTurn();
+            this.EndTurn2();
         } else {
             this.fillSortedList();
             //for applying effects effectUnit = unit
@@ -126,14 +136,15 @@ public class BattleManager : MonoBehaviour {
                 effectUnit.changeActionPoints(-2);
                 effectUnit.display.updateAP(effectUnit.ActionPoints);
             }
-            for(int i = this.handManager.cards.Count; i > 0; i--) {
-                this.discardCard(this.handManager.cards[i-1]);
-            }
-            this.pileManager.moveCards();
-            for(int i = 0; i < 5; i++) {
-                Card card = this.pileManager.draw();
-                this.handManager.addCard(card);
-            }
+            this.drawCard(3);
+            this.drawCount = 0;
+        }
+    }
+    
+    public void drawCard(int count) {
+        for(int i = 0; i < count; i++) {
+            Card card = this.pileManager.draw();
+            this.handManager.addCard(card);
         }
     }
 
