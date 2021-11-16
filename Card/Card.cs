@@ -12,18 +12,21 @@ public class Card : MonoBehaviour {
     public string title;
 
     [SerializeField]
-    //If it's positive, we reduce it. If negative we add to it
+    //If it's positive, we reduce it. If negative we increase it
     protected int APcost;
+
     public int APCost {
         get { return this.APcost; }
     }
 
+    [SerializeField]
     public int speedCost;
 
+    [SerializeField]
     public int HPCost;
 
+    [SerializeField]
     public bool consumable;
-
 
     [SerializeField]
     protected Move move;
