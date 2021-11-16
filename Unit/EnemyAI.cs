@@ -57,8 +57,11 @@ public class EnemyAI : MonoBehaviour {
                     case EffectType.Shield:
                     case EffectType.Thorns:
                     case EffectType.Immunity:
-                    case EffectType.Stealth:
                     case EffectType.Regen:
+                        mod.inverted = true;
+                        break;
+                    case EffectType.Stealth:
+                        mod.value = 999;
                         mod.inverted = true;
                         break;
                 }
@@ -282,7 +285,7 @@ public class Modifier {
     public EffectType effect;
 
     [SerializeField]
-    int value;
+    public int value;
 
     [SerializeField]
     public bool inverted;
