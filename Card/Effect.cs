@@ -35,30 +35,38 @@ public enum EffectType {
 [System.Serializable]
 public class Effect {
 
+    [SerializeField]
     public EffectType type;
-
+    [SerializeField]
     public int stackCount;
-
+    [SerializeField]
     public bool maintain;
-
     [SerializeField]
     public targetType targetType;
     [SerializeField]
     public List<Unit> targets;
 
+    ///<summary>Apply effects at the start of the units' turn</summary>
     public void apply(Unit unit) {
         if(this.stackCount == 0) return;
         switch(this.type) {
             case EffectType.Poison: 
-                unit.modifyHealth(this.stackCount);
-                this.stackCount--;
+                unit.modifyHealth(this.stackCount--);
                 break;
             case EffectType.Regen:
-                unit.modifyHealth(-this.stackCount);
-                this.stackCount--;
+                unit.modifyHealth(-this.stackCount--);
                 break;
             case EffectType.Lifesteal:
                 if(!this.maintain) this.stackCount--;
+                break;
+            case EffectType.Bomb:
+                if(--this.stackCount == 0) unit.modifyHealth(25); // damage is undecided
+                break;
+            case EffectType.Energized:
+                unit.modifySpeed(-this.stackCount--);
+                break;
+            case EffectType.Exhaust:
+                unit.modifySpeed(this.stackCount--);
                 break;
         }
     }
@@ -67,15 +75,25 @@ public class Effect {
         switch(this.type) {
             case EffectType.Slow:
             case EffectType.Haste:
+            case EffectType.Shield:
+            case EffectType.Immunity:
+            case EffectType.Heartless:
+            case EffectType.Strength:
+            case EffectType.Weak:
+            case EffectType.Frail:
+            case EffectType.Thorns:
+            case EffectType.Resistance:
+            case EffectType.Bound:
+            case EffectType.Cursed:
+            case EffectType.Confusion:
+            case EffectType.Stun:
+            case EffectType.Endure:
+            case EffectType.Silence:
                 this.stackCount--;              
-                break;
-            case EffectType.Bomb:
-                this.stackCount--;
-                unit.modifyHealth(25); //damage is undecided
                 break;
         }
     }
-
+    [SerializeField]
     string[] targetNames = {
         "None",
         "this unit",
@@ -133,7 +151,7 @@ public class Effect {
                 return $"Prevent the units' HP from reducing bellow 1. Receive Weak for 2 turns after it's removed.";
             case EffectType.Bomb:
                 if(stackCount > 1)
-                return $"Explodes in {stackCount} turns and deals 25 damage.";
+                return $"Explodes in {stackCount} turns and deals 25 damage."; //damage is undecided
                 else return $"Explodes in {stackCount} turn and deals 25 damage.";
             case EffectType.Stun:
                 if(stackCount > 1)
