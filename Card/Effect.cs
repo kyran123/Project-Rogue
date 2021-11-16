@@ -63,10 +63,10 @@ public class Effect {
                 if(--this.stackCount == 0) unit.modifyHealth(25); // damage is undecided
                 break;
             case EffectType.Energized:
-                unit.modifySpeed(-this.stackCount--);
+                unit.modifyAP(-this.stackCount--);
                 break;
             case EffectType.Exhaust:
-                unit.modifySpeed(this.stackCount--);
+                unit.modifyAP(this.stackCount--);
                 break;
         }
     }
