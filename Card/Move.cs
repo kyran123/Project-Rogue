@@ -12,19 +12,26 @@ public enum targetType {
 
 [System.Serializable]
 public class Move {
-
+    
+    [SerializeField]
     public MoveCost moveCost;
 
+    [SerializeField]
     public string moveName;
 
+    [SerializeField]
     public bool confusion;
 
+    [SerializeField]
     public int damage;
+
     [SerializeField]
     public targetType damageTargetType;
+
     [SerializeField]
     public List<Unit> damageTargets;
 
+    [SerializeField]
     public List<Effect> effects;
 
     public bool hasEffectByType(EffectType type) {
