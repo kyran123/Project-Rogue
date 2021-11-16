@@ -4,32 +4,32 @@ using UnityEngine;
 using System.Globalization;
 
 public enum EffectType {
-    Poison, //Take damge equal to stacks
-    Strength, //Do 25% more damage
-    Thorns, //Deal [Stack Count] damage to the attacker
-    Frail, //Receive 25% more damage
-    Weak, //Do 25% less damage
-    Resistance, //Receive half damage
-    Protect, //Protect other friendly units from damage by receiving it yourself
-    Shield, //Blocks x amount damage, reduce speed by 50%.  Decreases every turn.
-    Heartless, //Prevents the unit from being healed
-    Lifesteal, //When a unit with Lifesteal attacks, it restores health equal to the damage dealt.
-    Regen, //Restores 1 health per stack at the end of turn. Decreases every turn.
-    Stealth, //Unit cannot be targeted & attacked. If it does an (attack?) move stealth goes away. Decreases every turn.
-    Haste, //Speed buff. Decreases every turn.
-    Slow, //Speed debuff. Decreases every turn.
-    Cleanse, //Remove all buffs & debuffs on target.
-    Immunity, //Prevent other effects from being applied.
-    Silence, //Prevent targeted unit from applying any effects (They can still do damage)
-    Endure, //HP can not be reduced below 1. Once run out you'll gain 4 weak.
-    Oblivion, //negate all artifact effects.
-    Bomb, //When the bomb effect stackCount reaches 0 it explodes and deals damage.
-    Stun, //Prevents casting moves on the unit
-    Confusion, //The unit chooses target at random
-    Cursed, //Take damage for every move the unit uses
-    Energized, //At the start of turn, you gain AP for every stack of Energized. Decreases every turn.
-    Exhaust, //At the start of turn, you lose AP for every stack of Exhaust. Decreases every turn.
-    Bound, //Reduce the amount of moves an unit can have
+    Poison, // Take damage equal to [stackCount]
+    Strength, // Do 25% more damage
+    Thorns, // Deal [stackCount] damage to the attacker
+    Frail, // Receive 25% more damage
+    Weak, // Do 25% less damage
+    Resistance, // Receive half damage
+    Protect, // Prevent other friendly units from receiving damage by redirecting it to yourself
+    Shield, // Block [stackCount] amount damage, reduce speed by 50%
+    Heartless, // Prevent the unit from being healed
+    Lifesteal, // Heal the unit by the amount of damage dealt
+    Regen, // Restore 1 health per [stackCount] at the end of the turn
+    Stealth, // Unit cannot be targeted by enemies, if it makes a move stealth goes away
+    Haste, // Increase the speed of the unit by 25% of the unit's base speed
+    Slow, // Decrease the speed of the unit by 25% of the unit's base speed
+    Cleanse, // Remove all effects on the target
+    Immunity, // Prevent other effects from being applied on the target
+    Silence, // Prevent targeted unit from applying any effects
+    Endure, // Prevent unit's HP from being reduced below 1, once run out you'll gain 4 weak
+    Oblivion, // Negate all artifact effects
+    Bomb, // When the bomb effect [stackCount] reaches 0 it explodes and deals damage
+    Stun, // Prevents the unit from making moves
+    Confusion, // The unit chooses targets at random
+    Cursed, // The unit takesmdamage for every move made
+    Energized, // At the start of turn you gain [stackCount] AP
+    Exhaust, // At the start of turn, you lose [stackCount] AP
+    Bound, // Reduce the amount of moves an unit can make to 1
 }
 
 [System.Serializable]
@@ -45,10 +45,6 @@ public class Effect {
     public targetType targetType;
     [SerializeField]
     public List<Unit> targets;
-
-    public Effect() {
-
-    }
 
     public void apply(Unit unit) {
         if(this.stackCount == 0) return;
@@ -83,16 +79,16 @@ public class Effect {
         "all enemy units",
         "all friendly units"
     };
-
+    ///<summary>returns a string</summary>
     public string generateDescription() {
         //stackcount effect type name 'to' target name
         return $"Apply {stackCount} {type.ToString()} to {targetNames[(int)this.targetType]}.";
     }
-
+    ///<summary>returns a string</summary>
     public string generateTitle() {
         return $"{type.ToString()}";
     }
-
+    ///<summary>returns a string</summary>
     public string generateEffectDescription() {
         switch(type) {
             case EffectType.Regen:
