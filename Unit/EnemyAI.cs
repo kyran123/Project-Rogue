@@ -37,7 +37,7 @@ public class EnemyAI : MonoBehaviour {
         if(this.isSchizophrenic) this.personality = (Personalities)Random.Range(0, 5);
         this.getTargetModifiers(enemy, friendlies);
         Move move = this.getMove(enemy, friendlies);
-        if(move != null) enemy.addMove(move);
+        if(move != null) enemy.addMove(move, null);
     }
 
     public void getTargetModifiers(Unit enemy, List<Unit> friendlies) {

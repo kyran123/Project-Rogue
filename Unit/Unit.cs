@@ -160,7 +160,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void addMove(Move move, Card card) {
         if(this.moves.Count >= maxMoves) return;
         this.moves.Add(move);
-        this.addTile(card);
+        if(card != null) this.addTile(card);
         this.EventTrigger(TriggerType.MoveCount);
         this.display.updateAllUnitInfo(this);
     }
@@ -245,7 +245,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     /// <summary> Reduces stackcount of all effects on given unit </summary>
     public void reduceEffectCount() {
         foreach(Effect effect in this.effects) {
-            effect.reduceStackcount(this);
+            effect.reduceStackCount(this);
         }
     }
 
