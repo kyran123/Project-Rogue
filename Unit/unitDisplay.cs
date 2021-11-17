@@ -17,7 +17,6 @@ public class unitDisplay : MonoBehaviour {
     public TMP_Text SpeedText;
 
     public TMP_Text indexText;
-
     public GameObject highlight;
 
     [Space(10)]
@@ -28,6 +27,7 @@ public class unitDisplay : MonoBehaviour {
     [SerializeField]
     public EffectDescriptionManager edManager;
 
+    ///<summary>Update effect icons</summary>
     public void updateIcons(List<Effect> effects) {
         foreach(Effect effect in effects) {
             if(!this.effectsOnUnit.ContainsKey(effect.type)) {
@@ -69,6 +69,15 @@ public class unitDisplay : MonoBehaviour {
         this.SpeedText.text = $"{speed}";
     }
 
+    ///<summary>Update all info displayed on the unit</summary>
+    public void updateAllUnitInfo(Unit unit) {
+        this.updateHealthBar(unit.health, unit.maxHealth);
+        this.updateAP(unit.ap);
+        this.updateSpeed(unit.speed);
+        this.updateIcons(unit.effects);
+    }
+
+    ///<summary>Turn order appendage</summary>
     string[] appendage = {
         "st",
         "nd",
@@ -82,11 +91,8 @@ public class unitDisplay : MonoBehaviour {
         this.indexText.text = $"{index}{appendage[index - 1]}";
     }
 
-
+    ///<summary>Toggle unit highlight</summary>
     public void setHighlight(bool active) {
         highlight.SetActive(active);
     }
-
-
-
 }
