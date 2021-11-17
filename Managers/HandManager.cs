@@ -28,7 +28,6 @@ public class HandManager : MonoBehaviour {
         { 8, 30f }
     };
 
-    [SerializeField]
     public List<Card> cards;
     public Card onHoverCard;
 
@@ -97,7 +96,6 @@ public class HandManager : MonoBehaviour {
     }
 
     public void calculateCardPositions() {
-        
         //Get the card index of the card that is being hovered on
         int cardIndex = 9999;
         if(this.onHoverCard != null) cardIndex = this.cards.IndexOf(this.onHoverCard);
@@ -114,9 +112,7 @@ public class HandManager : MonoBehaviour {
         float cardSpacing = this.cardWidth - this.baseOverlap;
         float startPosition = -(handWidth / 2f); //Gets the starting position
 
-        //Debug.Log($"Handwidth: {handWidth}, CardSpacing: {cardSpacing}, StartPosition: {startPosition}");
         for(int i = 0; i < this.cards.Count; i++) {
-            //Debug.Log($"X: {(i * cardSpacing)}, Y: {this.cardPos[this.cards.Count][i]}, Z: 0f");
             float x = 0f;
             float y = 0f;
             float z = 0f;
