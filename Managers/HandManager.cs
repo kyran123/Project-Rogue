@@ -52,14 +52,34 @@ public class HandManager : MonoBehaviour {
         this.updateHand();
     }
 
+    /// <summary> Discards entire hand </summary>
+    public void discardCards() {
+        for(int i = this.cards.Count; i > 0; i--) {
+            this.discardCard(this.cards[i-1]);
+        }
+    }
+
+    /// <summary> Discards card given in parameter </summary>
+    public void discardCard(Card card) {
+        this.removeCard(card);
+        BattleManager.instance.pileManager.discardCard(card);
+        this.selectedCard = null;
+        card.GetComponent<CardBehavior>().highlight.SetActive(false);
+        card.gameObject.SetActive(false);
+    }
+
+    public void drawCard(int count) {
+        for(int i = 0; i < count; i++) {
+            Card card = BattleManager.instance.pileManager.draw();
+            this.addCard(card);
+        }
+    }
+
     public void removeCard(Card card) {
         cards.Remove(card);
         this.onHoverCard = null;
         this.updateHand();
     }
-
-
-
 
     public void updateHand() {
         this.calculateCardRotations();

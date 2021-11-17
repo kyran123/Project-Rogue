@@ -28,16 +28,15 @@ public class CardBehavior : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
         else {
             handManager.selectedCard = this;
             highlight.SetActive(true);
-            BattleManager.instance.gamePhase = BattleManager.phase.Target;
             BattleManager.instance.addSelectedCard(transform.GetComponent<Card>());
-            BattleManager.instance.updatePhase();
+            BattleManager.instance.setGamePhase(phase.Select);
             onHover();
         } 
     }
 
     public void deselect() {
         highlight.SetActive(false);
-        BattleManager.instance.unHighlightTargets();
+        BattleManager.instance.gpManager.unHighlightTargets();
         onExit();
     }
 

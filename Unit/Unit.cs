@@ -27,12 +27,6 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         this.display.edManager.gameObject.SetActive(false);
     }
 
-    public void selectUnit(Card card) {
-        if(card.APCost > 0) this.changeActionPoints(card.APCost);
-        if(card.speedCost != 0) this.modifySpeed(card.speedCost);
-        if(card.HPCost != 0) this.modifyHealth(card.HPCost);
-    }
-
     public bool isEnemy() {
         return enemyAI != null;
     }
@@ -88,7 +82,6 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         Effect effect = this.getEffectByType(EffectType.Lifesteal);
         if(effect != null) {
             this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage) * 0.2f));
-            effect.stackCount--;
         }
         this.EventTrigger(TriggerType.DamageDealt, move.damage);
     }
@@ -164,10 +157,12 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public int maxMoves = 3;
 
-    public void addMove(Move move) {
+    public void addMove(Move move, Card card) {
         if(this.moves.Count >= maxMoves) return;
         this.moves.Add(move);
+        this.addTile(card);
         this.EventTrigger(TriggerType.MoveCount);
+        this.display.updateAllUnitInfo(this);
     }
 
     public void removeMove(Move move) {
@@ -179,6 +174,40 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void removeMoves() {
         this.moves = new List<Move>();
         this.EventTrigger(TriggerType.MoveCount);
+    }
+
+    /// <summary> Loops through all moves </summary>
+    public void executeMoves() {
+        foreach(Move move in this.moves) {
+            this.executeMove(move);
+            this.applyMoveCost(this, move);
+        }
+        this.removeTiles();
+        this.removeMoves();
+    }
+
+    /// <summary> Execute move on target </summary>
+    public void executeMove(Move move) {
+        Unit target = move.damageTargets[0];
+        if(!BattleManager.instance.isTargetAvailable(target, move)) {
+            this.executeMove(move); 
+            return;   
+        } 
+        Unit protectUnit = BattleManager.instance.getProtectUnit(BattleManager.instance.getUnitListByType(target));
+        if(protectUnit != null) target = protectUnit;
+        this.dealDamage(target, move);
+        if(move.hasEffectByType(EffectType.Cleanse)) target.cleanse();
+    }
+
+    /// <summary> Apply the move cost to the unit. Note: Enemies only! </summary>
+    public void applyMoveCost(Unit unit, Move move) {
+        if(!unit.isEnemy()) return;
+        unit.changeActionPoints(move.moveCost.APcost);
+        unit.modifySpeed(move.moveCost.speedCost);
+        unit.modifyHealth(move.moveCost.HPCost);
+        unit.display.updateAP(unit.ActionPoints);
+        unit.display.updateSpeed(unit.getSpeed());
+        unit.display.updateHealthBar(unit.Health, unit.MaxHealth);
     }
     #endregion
 
@@ -211,6 +240,41 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
             if(effect.type == effectType) return true;
         }
         return false;
+    }
+
+    /// <summary> Reduces stackcount of all effects on given unit </summary>
+    public void reduceEffectCount() {
+        foreach(Effect effect in this.effects) {
+            effect.reduceStackcount(this);
+        }
+    }
+
+    public void applyEffects() {
+        foreach(Effect effect in this.effects) {
+            effect.apply(this);
+        }
+        this.removeFinishedEffects();
+        this.display.updateIcons(this.effects);
+    }
+
+    public void removeFinishedEffects() {
+        for(int i = this.effects.Count; i > 0; i--) {
+            Effect effect = this.effects[i-1];
+            if(effect.stackCount == 0) {
+                this.display.removeEffectIcon(effect);
+                this.display.edManager.removeDescription(effect);
+                this.effects.Remove(effect);
+            }
+        }
+    }
+
+    public void ApplyEffectsToTargets(Move move) {
+        foreach(Effect effect in move.effects) {
+            foreach(Unit target in effect.targets) {
+                target.addEffect(effect); //TODO: Check if unit is immune to effects
+                target.display.updateSpeed(target.getSpeed());
+            }
+        }
     }
 
     public void cleanse() {
