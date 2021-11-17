@@ -44,7 +44,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void modifyHealth(int value) {
         //pozitive value = do damage / negative value = heal
         if(value < 0 && this.getEffectByType(EffectType.Heartless) == null) return;
-        if(this.getEffectByType(EffectType.Endure) == true && value >= this.health) this.health = 1;
+        if(this.getEffectByType(EffectType.Endure) != null && value >= this.health) this.health = 1;
         else this.health -= value;
 
         if(this.health > this.maxHealth) this.health = this.maxHealth;
