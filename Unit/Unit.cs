@@ -35,18 +35,26 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     }
 
     #region HEALTH
+
     [SerializeField]
     protected int health;
+
     public int Health {
         get { return this.health; }
         set { this.health = value; }
     }
+    
+    [SerializeField]
+    protected int maxHealth;
+    public int MaxHealth { 
+        get { return this.maxHealth; } 
+    }
+
     public void modifyHealth(int value) {
-        //pozitive value = do damage / negative value = heal
+        //Positive value = do damage / Negative value = heal
         if(value < 0 && this.getEffectByType(EffectType.Heartless) == null) return;
         if(this.getEffectByType(EffectType.Endure) != null && value >= this.health) this.health = 1;
         else this.health -= value;
-
         if(this.health > this.maxHealth) this.health = this.maxHealth;
         if(this.health <= 0) { //unit dies
             this.health = 0;
@@ -54,12 +62,15 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
             this.die();
             return;
         }
+
         this.display.updateHealthBar(this.health, this.maxHealth);
+        this.display.updateSpeed(this.getSpeed());
+
+        //Send out skill triggers
         if(value < 0) this.EventTrigger(TriggerType.Healed, value);
         else this.EventTrigger(TriggerType.DamageReceived, value);
         this.EventTrigger(TriggerType.HealthAbove);
         this.EventTrigger(TriggerType.HealthLower);
-        this.display.updateSpeed(this.getSpeed());
     }
 
     public void receiveDamage(float value) {
@@ -83,7 +94,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void dealDamage(Unit target, Move move) {
         if(this.calculateAttackDamage(move.damage) > target.Health) this.EventTrigger(TriggerType.OnKill);
         target.receiveDamage(this.calculateAttackDamage(move.damage));
-
+        //Check for effects
         Effect effect = this.getEffectByType(EffectType.Lifesteal);
         if(effect != null) {
             this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage) * 0.2f));
@@ -97,19 +108,16 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         return (int)damage;
     }
 
-    [SerializeField]
-    protected int maxHealth;
-    public int MaxHealth { 
-        get { return this.maxHealth; } 
-    }
     #endregion
 
     #region ACTIONPOINTS
+
     [SerializeField]
     protected int actionPoints;
     public int ActionPoints {
         get { return this.actionPoints; }
     }
+
     [SerializeField]
     protected int maxActionPoints;
     public int MaxActionPoints {
@@ -117,14 +125,17 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     }
 
     public void changeActionPoints(int value) {
+        //Positive value = remove AP / Negative alue = add AP
         this.actionPoints -= value;
         if(this.actionPoints > this.MaxActionPoints) this.actionPoints = this.MaxActionPoints;
         this.EventTrigger(TriggerType.APAbove);
         this.EventTrigger(TriggerType.APLower);
     }
+
     #endregion
 
     #region SPEED
+
     [SerializeField]
     protected int speed;
     public int Speed {
@@ -148,15 +159,17 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         return value;
     }
 
-
     public void modifySpeed(int value) {
-        this.speed -= value; //Negative speed is positive
+        //Positive value = reduce speed / Negatie value = increase speed
+        this.speed -= value;
         this.EventTrigger(TriggerType.SpeedAbove);
         this.EventTrigger(TriggerType.SpeedLower);
     } 
+
     #endregion
 
     #region MOVES
+
     [SerializeField]
     public List<Move> moves = new List<Move>();
 
@@ -176,6 +189,8 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
             this.EventTrigger(TriggerType.MoveCount);
         }
     }
+
+    ///<summary> Removes all moves </summary>
     public void removeMoves() {
         this.moves = new List<Move>();
         this.EventTrigger(TriggerType.MoveCount);
@@ -210,13 +225,13 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         unit.changeActionPoints(move.moveCost.APcost);
         unit.modifySpeed(move.moveCost.speedCost);
         unit.modifyHealth(move.moveCost.HPCost);
-        unit.display.updateAP(unit.ActionPoints);
-        unit.display.updateSpeed(unit.getSpeed());
-        unit.display.updateHealthBar(unit.Health, unit.MaxHealth);
+        updateAllUnitInfo(unit);
     }
+
     #endregion
 
     #region EFFECTS
+
     [SerializeField]
     public List<Effect> effects = new List<Effect>();
 
@@ -254,6 +269,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         }
     }
 
+    /// <summary> Apply all effects on the unit </summary>
     public void applyEffects() {
         foreach(Effect effect in this.effects) {
             effect.apply(this);
@@ -285,6 +301,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void cleanse() {
         this.effects.Clear();
     }
+
     #endregion
 
     #region TILES
@@ -305,26 +322,32 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         }
         this.cards.Clear();
     }
+
     #endregion
     
     #region SKILLS
+
     public List<Skill> skills = new List<Skill>();
+
     public void EventTrigger(TriggerType type, int value = 0) {
         foreach(Skill skill in this.skills) {
             skill.eventTrigger(type, this, value);
         }
     }
+
     public Skill getSkillByTriggerType(TriggerType type) {
         foreach(Skill skill in this.skills) {
             if(skill.getTriggerType() == type) return skill;
         }
         return null;
     }
+
     public Skill getSkillByType(SkillType type) {
         foreach(Skill skill in this.skills) {
             if(skill.skillType == type) return skill;
         }
         return null;
     }
+    
     #endregion
 }
