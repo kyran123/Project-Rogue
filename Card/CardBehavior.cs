@@ -36,6 +36,7 @@ public class CardBehavior : MonoBehaviour, IPointerEnterHandler, IPointerExitHan
 
     public void deselect() {
         highlight.SetActive(false);
+        BattleManager.instance.setGamePhase(phase.Pick);
         BattleManager.instance.gpManager.unHighlightTargets();
         onExit();
     }
