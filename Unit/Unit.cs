@@ -7,11 +7,14 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     [SerializeField]
     public unitDisplay display;
-    
+
+    [SerializeField]
     public string unitName;
 
+    [SerializeField]
     public bool canBeSelected = false;
 
+    [SerializeField]
     public EnemyAI enemyAI;
 
     public void OnPointerClick(PointerEventData pointerEventData) {
@@ -41,7 +44,9 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void modifyHealth(int value) {
         //pozitive value = do damage / negative value = heal
         if(value < 0 && this.getEffectByType(EffectType.Heartless) == null) return;
-        this.health -= value;
+        if(this.getEffectByType(EffectType.Endure) == true && value >= this.health) this.health = 1;
+        else this.health -= value;
+
         if(this.health > this.maxHealth) this.health = this.maxHealth;
         if(this.health <= 0) { //unit dies
             this.health = 0;
