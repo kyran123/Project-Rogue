@@ -72,7 +72,7 @@ public class unitDisplay : MonoBehaviour {
     ///<summary>Update all info displayed on the unit</summary>
     public void updateAllUnitInfo(Unit unit) {
         this.updateHealthBar(unit.Health, unit.MaxHealth);
-        this.updateAP(unit.actionPoints);
+        this.updateAP(unit.ActionPoints);
         this.updateSpeed(unit.getSpeed());
         this.updateIcons(unit.effects);
     }
