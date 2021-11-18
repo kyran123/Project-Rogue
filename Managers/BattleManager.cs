@@ -98,7 +98,7 @@ public class BattleManager : MonoBehaviour {
         unit.reduceEffectCount();
 
         if(this.battleIsOver) return;
-        if(unit.isEnemy()) unit.enemyAI.MoveSelection(unit, this.friendlyUnits);
+        if(unit.isEnemy() && !unit.hasEffect(EffectType.Stun)) unit.enemyAI.MoveSelection(unit, this.friendlyUnits);
 
         if(unit.moves.Count > 0) unit.executeMoves();
         this.sortedUnits.Remove(unit);
@@ -116,13 +116,19 @@ public class BattleManager : MonoBehaviour {
     /// <summary> Resets unit lists, applies effects and updates unit information displays </summary>
     public void finishUnitTurns() {
         this.resetSortedList();
+        this.applyUnitEffects(0);
         foreach(Unit unit in this.allUnits) {
-            unit.applyEffects();
             unit.changeActionPoints(-this.actionPointsPerTurn);
             unit.display.updateAP(unit.ActionPoints);
         }
         this.handManager.drawCard(this.drawPerTurn);
         this.drawCount = 0;
+    }
+
+    public void applyUnitEffects(int index) {
+        this.allUnits[index].applyEffects();
+        index++;
+        if(index < this.allUnits.Count) this.applyUnitEffects(index);
     }
 
     #endregion
@@ -205,6 +211,10 @@ public class BattleManager : MonoBehaviour {
         }
         if(this.gpManager.GamePhase == phase.Select) {
             this.gpManager.selectedUnit = unit;
+            foreach(Effect effect in this.gpManager.selectedCard.Move.effects) {
+                if(effect.targetType == targetType.FRIENDLY) effect.targets = new List<Unit>() { unit };
+                if(effect.targetType == targetType.ALLFRIENDLIES) effect.targets = this.friendlyUnits;
+            }
             this.setGamePhase(phase.Target);
         }
     }

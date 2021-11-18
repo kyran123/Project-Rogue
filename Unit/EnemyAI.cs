@@ -29,6 +29,7 @@ public class EnemyAI : MonoBehaviour {
     public float baseDoNothingMove = 20f;
 
     public void MoveSelection(Unit enemy, List<Unit> friendliesList) {
+        return;
         List<Unit> friendlies = new List<Unit>();
         foreach(Unit friendly in friendliesList) {
             if(friendly.Health > 0) friendlies.Add(friendly);
@@ -36,6 +37,7 @@ public class EnemyAI : MonoBehaviour {
         this.Target.Clear();
         if(this.isSchizophrenic) this.personality = (Personalities)Random.Range(0, 5);
         this.getTargetModifiers(enemy, friendlies);
+        if(this.Target.Count == 0) return;
         Move move = this.getMove(enemy, friendlies);
         if(move != null) enemy.addMove(move, null);
     }
@@ -60,10 +62,6 @@ public class EnemyAI : MonoBehaviour {
                     case EffectType.Regen:
                         mod.inverted = true;
                         break;
-                    case EffectType.Stealth:
-                        mod.value = 999;
-                        mod.inverted = true;
-                        break;
                 }
                 mods.Add(mod);
             }
@@ -73,7 +71,7 @@ public class EnemyAI : MonoBehaviour {
                     if(move.damage > target.Health) mods.Add(new Modifier(ModifierName.Kills, 5));
                 }
             }
-            this.Target.Add(new Target(friendly, mods));
+            if(!friendly.hasEffect(EffectType.Stealth)) this.Target.Add(new Target(friendly, mods));
         }
     }
 
@@ -116,7 +114,6 @@ public class EnemyAI : MonoBehaviour {
                         if(effect.targets.Contains(enemy)) effectValue -= 1;
                         else effectValue += 1;
                         break;
-                    case EffectType.Stealth:
                     case EffectType.Shield:
                     case EffectType.Protect:
                     case EffectType.Strength:

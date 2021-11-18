@@ -103,7 +103,12 @@ public class GamePhaseManager {
         Card card = this.selectedCard;
         foreach(Unit target in targets) {
             if(this.gamePhase == phase.Select) {
-                if(target.ActionPoints >= card.APCost && target.Speed >= card.speedCost) {
+                if(
+                    !target.hasEffect(EffectType.Stun) && 
+                    target.ActionPoints >= card.APCost && 
+                    target.Speed >= card.speedCost &&
+                    target.moves.Count < target.getMaxMoves()
+                ) {
                     target.display.setHighlight(true);
                     target.canBeSelected = true;
                }

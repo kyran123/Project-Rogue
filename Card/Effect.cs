@@ -4,32 +4,32 @@ using UnityEngine;
 using System.Globalization;
 
 public enum EffectType {
-    Poison, // Take damage equal to [stackCount]
-    Strength, // Do 25% more damage
-    Thorns, // Deal [stackCount] damage to the attacker
-    Frail, // Receive 25% more damage
-    Weak, // Do 25% less damage
-    Resistance, // Receive half damage
-    Protect, // Prevent other friendly units from receiving damage by redirecting it to yourself
-    Shield, // Block [stackCount] amount damage, reduce speed by 50%
-    Heartless, // Prevent the unit from being healed
-    Lifesteal, // Heal the unit by the amount of damage dealt
-    Regen, // Restore 1 health per [stackCount] at the end of the turn
-    Stealth, // Unit cannot be targeted by enemies, if it makes a move stealth goes away
-    Haste, // Increase the speed of the unit by 25% of the unit's base speed
-    Slow, // Decrease the speed of the unit by 25% of the unit's base speed
-    Cleanse, // Remove all effects on the target
-    Immunity, // Prevent other effects from being applied on the target
-    Silence, // Prevent targeted unit from applying any effects
-    Endure, // Prevent unit's HP from being reduced below 1, once run out you'll gain 2 weak
+    Poison, // Take damage equal to [stackCount] X
+    Strength, // Do 25% more damage X
+    Thorns, // Deal [stackCount] damage to the attacker X
+    Frail, // Receive 25% more damage  X
+    Weak, // Do 25% less damage X
+    Resistance, // Receive half damage X
+    Protect, // Prevent other friendly units from receiving damage by redirecting it to yourself X
+    Shield, // Block [stackCount] amount damage, possibly reduce speed by 50% X
+    Heartless, // Prevent the unit from being healed X
+    Lifesteal, // Heal the unit by the amount of damage dealt X
+    Regen, // Restore 1 health per [stackCount] at the end of the turn X
+    Stealth, // Unit cannot be targeted by enemies, if it makes a move stealth goes away 
+    Haste, // Increase the speed of the unit by 25% of the unit's base speed X
+    Slow, // Decrease the speed of the unit by 25% of the unit's base speed X
+    Cleanse, // Remove all effects on the target X
+    Immunity, // Prevent other effects from being applied on the target X
+    Silence, // Prevent targeted unit from applying any effects X
+    Endure, // Prevent unit's HP from being reduced below 1, once run out you'll gain 2 weak X
     Oblivion, // Negate all artifact effects
-    Bomb, // When the bomb effect [stackCount] reaches 0 it explodes and deals damage
-    Stun, // Prevents the unit from making moves
-    Confusion, // The unit chooses targets at random
-    Cursed, // The unit takes damage for every move made
-    Energized, // At the start of turn you gain [stackCount] AP
-    Exhaust, // At the start of turn, you lose [stackCount] AP
-    Bound, // Reduce the amount of moves an unit can make to 1
+    Bomb, // When the bomb effect [stackCount] reaches 0 it explodes and deals damage X
+    Stun, // Prevents the unit from making moves X
+    Confusion, // The unit chooses targets at random X
+    Cursed, // The unit takes [stackCout] damage for every move made X
+    Energized, // At the start of turn you gain [stackCount] AP X
+    Exhaust, // At the start of turn, you lose [stackCount] AP X
+    Bound, // Reduce the amount of moves an unit can make to 1 X
 }
 
 [System.Serializable]
@@ -74,6 +74,7 @@ public class Effect {
     public void reduceStackCount(Unit unit) {
         switch(this.type) {
             case EffectType.Slow:
+            case EffectType.Stealth:
             case EffectType.Haste:
             case EffectType.Shield:
             case EffectType.Immunity:
@@ -93,7 +94,7 @@ public class Effect {
                 break;
         }
     }
-    [SerializeField]
+
     string[] targetNames = {
         "None",
         "this unit",
@@ -160,7 +161,7 @@ public class Effect {
             case EffectType.Confusion:
                 return $"Targets for the units' moves are chosen at random.";
             case EffectType.Cursed:
-                return $"The unit takes 5 damage for every move made."; //effect is not implemented, damage made is undecided
+                return $"The unit takes {stackCount} damage for every move made.";
             case EffectType.Energized:
                 return $"At the start of the turn the unit gains {stackCount} AP.";
             case EffectType.Exhaust:

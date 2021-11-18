@@ -52,8 +52,8 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public void modifyHealth(int value) {
         //Positive value = do damage / Negative value = heal
-        if(value < 0 && this.getEffectByType(EffectType.Heartless) == null) return;
-        if(this.getEffectByType(EffectType.Endure) != null && value >= this.health) this.health = 1;
+        if(value < 0 && this.hasEffect(EffectType.Heartless)) return;
+        if(this.hasEffect(EffectType.Endure) && value >= this.health) this.health = 1;
         else this.health -= value;
         if(this.health > this.maxHealth) this.health = this.maxHealth;
         if(this.health <= 0) { //unit dies
@@ -75,9 +75,21 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public void receiveDamage(float value) {
         //Apply effects to base damage
-        if(this.getEffectByType(EffectType.Frail) != null) value *= 1.25f;
-        if(this.getEffectByType(EffectType.Resistance) != null) value *= 0.5f;
-        this.modifyHealth((int)value);
+        if(this.hasEffect(EffectType.Frail)) value *= 1.25f;
+        if(this.hasEffect(EffectType.Resistance)) value *= 0.5f;
+        if(this.hasEffect(EffectType.Shield)) {
+            Effect shield = this.getEffectByType(EffectType.Shield);
+            if(value >= shield.stackCount) {
+                value -= shield.stackCount;
+                this.effects.Remove(shield);
+            }
+            else {
+                shield.stackCount -= (int)value;
+                return;
+            }
+        }
+
+        this.modifyHealth(Mathf.Abs((int)value));
     }
 
     public void die() {
@@ -95,6 +107,8 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         if(this.calculateAttackDamage(move.damage) > target.Health) this.EventTrigger(TriggerType.OnKill);
         target.receiveDamage(this.calculateAttackDamage(move.damage));
         //Check for effects
+        if(target.hasEffect(EffectType.Thorns)) this.receiveDamage(target.getEffectByType(EffectType.Thorns).stackCount);
+
         Effect effect = this.getEffectByType(EffectType.Lifesteal);
         if(effect != null) {
             this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage) * 0.2f));
@@ -172,11 +186,16 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     [SerializeField]
     public List<Move> moves = new List<Move>();
-
+    
+    [SerializeField]    
     public int maxMoves = 3;
+    public int getMaxMoves() {
+        if(this.hasEffect(EffectType.Bound)) return 1;
+        return maxMoves;
+    }
 
     public void addMove(Move move, Card card) {
-        if(this.moves.Count >= maxMoves) return;
+        if(this.moves.Count >= this.getMaxMoves()) return;
         this.moves.Add(move);
         if(card != null) this.addTile(card);
         this.EventTrigger(TriggerType.MoveCount);
@@ -198,8 +217,9 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     /// <summary> Loops through all moves </summary>
     public void executeMoves() {
+        if(this.hasEffect(EffectType.Bound)) this.moves = new List<Move>(){ this.moves[0] };
         foreach(Move move in this.moves) {
-            this.executeMove(move);
+            this.executeMove(move, 0);
             this.applyMoveCost(this, move);
         }
         this.removeTiles();
@@ -207,16 +227,37 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     }
 
     /// <summary> Execute move on target </summary>
-    public void executeMove(Move move) {
-        Unit target = move.damageTargets[0];
+    public void executeMove(Move move, int index) {
+        if(this.hasEffect(EffectType.Stun)) return;
+        Unit target = move.damageTargets[index];
+        if(this.hasEffect(EffectType.Confusion)) {
+            if(this.isEnemy()) {
+                target = BattleManager.instance.friendlyUnits[Random.Range(0, BattleManager.instance.friendlyUnits.Count)];
+            } else {
+                target = BattleManager.instance.enemyUnits[Random.Range(0, BattleManager.instance.enemyUnits.Count)];
+            }
+        }
+        if(this.hasEffect(EffectType.Cursed)) this.modifyHealth(this.getEffectByType(EffectType.Cursed).stackCount);
         if(!BattleManager.instance.isTargetAvailable(target, move)) {
-            this.executeMove(move); 
+            this.executeMove(move, ++index); 
             return;   
         } 
         Unit protectUnit = BattleManager.instance.getProtectUnit(BattleManager.instance.getUnitListByType(target));
         if(protectUnit != null) target = protectUnit;
         this.dealDamage(target, move);
-        if(move.hasEffectByType(EffectType.Cleanse)) target.cleanse();
+        if(this.hasEffect(EffectType.Silence)) return;
+        foreach(Effect effect in move.effects) {
+            foreach(Unit t in effect.targets) {
+                if(move.hasEffectByType(EffectType.Cleanse)) t.cleanse();
+                else t.addEffect(effect);  
+            }
+        }
+        if(this.hasEffect(EffectType.Stealth)) {
+            this.display.removeEffectIcon(this.getEffectByType(EffectType.Stealth));
+            this.effects.Remove(this.getEffectByType(EffectType.Stealth));
+        }
+        index++;
+        if(index < move.damageTargets.Count) this.executeMove(move, index);
     }
 
     /// <summary> Apply the move cost to the unit. Note: Enemies only! </summary>
@@ -236,6 +277,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public List<Effect> effects = new List<Effect>();
 
     public void addEffect(Effect effect) {
+        if(this.hasEffect(EffectType.Immunity)) return;
         if(effect.type == EffectType.Cleanse) return;
         if(this.effects.Contains(effect)) {
             int index = this.effects.IndexOf(effect);
@@ -271,7 +313,9 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     /// <summary> Apply all effects on the unit </summary>
     public void applyEffects() {
+        if(this.hasEffect(EffectType.Bomb)) this.getEffectByType(EffectType.Bomb).apply(this);
         foreach(Effect effect in this.effects) {
+            if(effect.type == EffectType.Bomb) continue;
             effect.apply(this);
         }
         this.removeFinishedEffects();
@@ -300,6 +344,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public void cleanse() {
         this.effects.Clear();
+        this.display.updateIcons(this.effects);
     }
 
     #endregion
