@@ -225,7 +225,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         unit.changeActionPoints(move.moveCost.APcost);
         unit.modifySpeed(move.moveCost.speedCost);
         unit.modifyHealth(move.moveCost.HPCost);
-        updateAllUnitInfo(unit);
+        this.display.updateAllUnitInfo(unit);
     }
 
     #endregion
