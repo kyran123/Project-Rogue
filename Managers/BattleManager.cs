@@ -90,12 +90,12 @@ public class BattleManager : MonoBehaviour {
 
     public void EndTurn() {
         this.handManager.discardCards();
+        this.applyUnitEffects(0);
         this.unitTurn();
     }
 
     public void unitTurn() {
         Unit unit = this.getNextUnit();
-        unit.reduceEffectCount();
 
         if(this.battleIsOver) return;
         if(unit.isEnemy() && !unit.hasEffect(EffectType.Stun)) unit.enemyAI.MoveSelection(unit, this.friendlyUnits);
@@ -116,8 +116,8 @@ public class BattleManager : MonoBehaviour {
     /// <summary> Resets unit lists, applies effects and updates unit information displays </summary>
     public void finishUnitTurns() {
         this.resetSortedList();
-        this.applyUnitEffects(0);
         foreach(Unit unit in this.allUnits) {
+            unit.reduceEffectCount();
             unit.changeActionPoints(-this.actionPointsPerTurn);
             unit.display.updateAP(unit.ActionPoints);
         }

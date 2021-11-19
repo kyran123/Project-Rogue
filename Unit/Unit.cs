@@ -109,9 +109,8 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         //Check for effects
         if(target.hasEffect(EffectType.Thorns)) this.receiveDamage(target.getEffectByType(EffectType.Thorns).stackCount);
 
-        Effect effect = this.getEffectByType(EffectType.Lifesteal);
-        if(effect != null) {
-            this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage) * 0.2f));
+        if(this.hasEffect(EffectType.Lifesteal)) {
+            this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage)));
         }
         this.EventTrigger(TriggerType.DamageDealt, move.damage);
     }
@@ -215,13 +214,17 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         this.EventTrigger(TriggerType.MoveCount);
     }
 
+    public List<Effect> effectsToAdd = new List<Effect>();
+
     /// <summary> Loops through all moves </summary>
     public void executeMoves() {
+        this.effectsToAdd.Clear();
         if(this.hasEffect(EffectType.Bound)) this.moves = new List<Move>(){ this.moves[0] };
         foreach(Move move in this.moves) {
             this.executeMove(move, 0);
             this.applyMoveCost(this, move);
         }
+        this.addEffectsToFriendly();
         this.removeTiles();
         this.removeMoves();
     }
@@ -249,7 +252,8 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         foreach(Effect effect in move.effects) {
             foreach(Unit t in effect.targets) {
                 if(move.hasEffectByType(EffectType.Cleanse)) t.cleanse();
-                else t.addEffect(effect);  
+                else if(t.isEnemy()) t.addEffect(effect);
+                else if(!effectsToAdd.Contains(effect)) effectsToAdd.Add(effect);
             }
         }
         if(this.hasEffect(EffectType.Stealth)) {
@@ -258,6 +262,16 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
         }
         index++;
         if(index < move.damageTargets.Count) this.executeMove(move, index);
+    }
+
+    public void addEffectsToFriendly() {
+        if(this.effectsToAdd.Count > 0) { 
+            foreach(Effect effect in this.effectsToAdd) {
+                foreach(Unit target in effect.targets) {
+                    target.addEffect(effect);
+                }
+            }
+        }
     }
 
     /// <summary> Apply the move cost to the unit. Note: Enemies only! </summary>
@@ -279,11 +293,11 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
     public void addEffect(Effect effect) {
         if(this.hasEffect(EffectType.Immunity)) return;
         if(effect.type == EffectType.Cleanse) return;
-        if(this.effects.Contains(effect)) {
-            int index = this.effects.IndexOf(effect);
-            this.effects[index].stackCount += effect.stackCount;
+        if(this.hasEffect(effect.type)) {
+            this.getEffectByType(effect.type).stackCount += effect.stackCount;
+        } else {
+            this.effects.Add(new Effect().instantiate(effect));
         }
-        this.effects.Add(effect);
         this.display.updateIcons(this.effects);
         this.EventTrigger(TriggerType.Effect);
     }
@@ -344,7 +358,7 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public void cleanse() {
         this.effects.Clear();
-        this.display.updateIcons(this.effects);
+        this.display.clearIcons();
     }
 
     #endregion

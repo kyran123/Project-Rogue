@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Globalization;
 
 public enum EffectType {
     Poison, // Take damage equal to [stackCount] X
@@ -45,6 +44,16 @@ public class Effect {
     public targetType targetType;
     [SerializeField]
     public List<Unit> targets;
+
+
+    public Effect instantiate(Effect effect) {
+        this.type = effect.type;
+        this.stackCount = effect.stackCount;
+        this.maintain = effect.maintain;
+        this.targetType = effect.targetType;
+        this.targets = effect.targets;
+        return this;
+    }
 
     ///<summary>Apply effects at the start of the units' turn</summary>
     public void apply(Unit unit) {
@@ -105,7 +114,7 @@ public class Effect {
     ///<summary>returns a string</summary>
     public string generateDescription() {
         //stackcount effect type name 'to' target name
-        return $"Apply {stackCount} {type.ToString()} to {targetNames[(int)this.targetType]}.";
+        return $"Apply {this.stackCount} {this.type.ToString()} to {this.targetNames[(int)this.targetType]}.";
     }
     ///<summary>returns a string</summary>
     public string generateTitle() {
@@ -117,7 +126,7 @@ public class Effect {
             case EffectType.Regen:
                 return $"Heal for {stackCount}.";
             case EffectType.Lifesteal:
-                return $"Heal for the damage done by this unit.";
+                return $"Heal for the amount of damage done by this unit.";
             case EffectType.Shield:
                 return $"Block {stackCount} damage.";
             case EffectType.Haste:
@@ -137,19 +146,19 @@ public class Effect {
             case EffectType.Protect:
                 return $"Redirect all incoming damage to the unit.";
             case EffectType.Thorns:
-                return $"Deal {stackCount} damage to the atacker.";
+                return $"Deal {stackCount} damage to the attacker.";
             case EffectType.Heartless:
                 return $"The unit can not be healed.";
             case EffectType.Stealth:
-                return $"The unit can not be targeted by enemies. If the unit makes a move, the effect is lost.";
+                return $"The unit can not be targeted. If the unit makes a move, the effect is lost.";
             case EffectType.Cleanse:
                 return $"Remove all effects on the target.";
             case EffectType.Immunity:
                 return $"Prevent other effects from being applied on the unit.";
             case EffectType.Silence:
-                return $"Preent the unit from applying any effetcs.";
+                return $"Prevent the unit from applying any effects.";
             case EffectType.Endure:
-                return $"Prevent the units' HP from reducing bellow 1. Receive Weak for 2 turns after it's removed.";
+                return $"Prevent the units' HP from reducing below 1.";
             case EffectType.Bomb:
                 if(stackCount > 1)
                 return $"Explodes in {stackCount} turns and deals 25 damage."; //damage is undecided

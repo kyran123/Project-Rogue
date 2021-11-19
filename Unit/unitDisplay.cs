@@ -41,6 +41,17 @@ public class unitDisplay : MonoBehaviour {
         }
     }
 
+    public void clearIcons() {
+        foreach(GameObject descriptionObject in this.edManager.descriptions.Values) {
+            Destroy(descriptionObject);
+        }
+        this.edManager.descriptions.Clear();
+        foreach(GameObject effectObject in this.effectsOnUnit.Values) {
+            Destroy(effectObject);
+        }
+        this.effectsOnUnit.Clear();
+    }
+
     public void removeEffectIcon(Effect effect) {
         if(this.effectsOnUnit.ContainsKey(effect.type)) {
             Destroy(this.effectsOnUnit[effect.type]);
