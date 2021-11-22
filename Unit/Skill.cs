@@ -14,6 +14,9 @@ public enum SkillType {
 public class Skill {
 
     [SerializeField]
+    public string name;
+
+    [SerializeField]
     Trigger trigger;
 
     [SerializeField]
@@ -41,6 +44,9 @@ public class Skill {
                     case SkillType.Draw:
                         BattleManager.instance.drawCard(this.skillBonus);
                         break;
+                    case SkillType.Speed:
+                        unit.modifySpeed(this.skillBonus);
+                        break;
                 }
 
             }
@@ -53,6 +59,26 @@ public class Skill {
 
     public TriggerType getTriggerType() {
         return this.trigger.type;
+    }
+
+    public string generateTitle() {
+        return $"{this.name.ToString()}";
+    }
+
+    public string generateDescription() {
+        switch(this.skillType) {
+            case SkillType.Health:
+                return $"Gain {this.skillBonus} HP {this.trigger.generateSkillDescription()}";
+            case SkillType.AP:
+                return $"Gain {this.skillBonus} AP {this.trigger}";
+            case SkillType.Effect:
+                return $"Gain {this.effect.stackCount} {this.effect.generateTitle()} {this.trigger}";
+            case SkillType.Draw:
+                return $"Draw {this.skillBonus} cards {this.trigger}";
+            case SkillType.Speed:
+                return $"Gain {this.skillBonus} speed {this.trigger}";
+        }
+        return "";
     }
     
 }

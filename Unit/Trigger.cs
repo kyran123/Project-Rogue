@@ -70,4 +70,35 @@ public class Trigger {
         return false;
     }
     
+    public string generateSkillDescription() {
+        switch(this.type) {
+            case TriggerType.Effect:
+                return $"on gaining {this.effectType} effect";
+            case TriggerType.Healed:
+                return $"when healed";
+            case TriggerType.OnKill:
+                return $"when it kills";
+            case TriggerType.OnDeath:
+                return $"when killed";
+            case TriggerType.DamageReceived:
+                return $"when damage is received";
+            case TriggerType.DamageDealt:
+                return $"when dealing damage";
+            case TriggerType.HealthLower:
+                return $"when health is below {this.triggerCount}";
+            case TriggerType.HealthAbove:
+                return $"when health is above {this.triggerCount}";
+            case TriggerType.APLower:
+                return $"when Action points is below {this.triggerCount}";
+            case TriggerType.APAbove:
+                return $"when Action points is above {this.triggerCount}";
+            case TriggerType.SpeedLower:
+                return $"when speed is below {this.triggerCount}";
+            case TriggerType.SpeedAbove:
+                return $"when speed is above {this.triggerCount}";
+            case TriggerType.MoveCount:
+                return $"on having {this.triggerCount} moves";
+        }
+        return "";
+    }
 }

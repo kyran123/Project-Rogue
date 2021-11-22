@@ -59,6 +59,7 @@ public class BattleManager : MonoBehaviour {
             unit.display.updateSpeed(unit.getSpeed());
             unit.display.updateHealthBar(unit.Health, unit.MaxHealth);
             unit.display.updateIcons(unit.effects);
+            unit.display.edManager.setSkillDescriptions(unit);
             unit.display.edManager.updateDescriptions(unit.effects);
         }
     }

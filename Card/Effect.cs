@@ -124,41 +124,41 @@ public class Effect {
     public string generateEffectDescription() {
         switch(type) {
             case EffectType.Regen:
-                return $"Heal for {stackCount}.";
+                return $"Heal for {stackCount} {this.generateDurationDescription()}.";
             case EffectType.Lifesteal:
-                return $"Heal for the amount of damage done by this unit.";
+                return $"Heal for the amount of damage done by this unit {this.generateDurationDescription()}.";
             case EffectType.Shield:
                 return $"Block {stackCount} damage.";
             case EffectType.Haste:
-                return $"Speed increased by 25%.";
+                return $"Speed increased by 25% {this.generateDurationDescription()}.";
             case EffectType.Slow:
-                return $"Speed decreased by 25%.";
+                return $"Speed decreased by 25% {this.generateDurationDescription()}.";
             case EffectType.Poison:
-                return $"Take {stackCount} damage at the start of the turn.";
+                return $"Take {stackCount} damage at the start of the turn {this.generateDurationDescription()}.";
             case EffectType.Strength:
-                return $"Damage increased by 25%.";
+                return $"Damage increased by 25% {this.generateDurationDescription()}.";
             case EffectType.Weak:
-                return $"Damage reduced by 25%.";
+                return $"Damage reduced by 25% {this.generateDurationDescription()}.";
             case EffectType.Frail:
-                return $"Take 25% more damage.";
+                return $"Take 25% more damage {this.generateDurationDescription()}.";
             case EffectType.Resistance:
-                return $"Take half damage.";
+                return $"Take half damage {this.generateDurationDescription()}.";
             case EffectType.Protect:
-                return $"Redirect all incoming damage to the unit.";
+                return $"Redirect all incoming damage to the unit {this.generateDurationDescription()}.";
             case EffectType.Thorns:
-                return $"Deal {stackCount} damage to the attacker.";
+                return $"Deal {stackCount} damage to the attacker {this.generateDurationDescription()}.";
             case EffectType.Heartless:
-                return $"The unit can not be healed.";
+                return $"The unit can not be healed {this.generateDurationDescription()}.";
             case EffectType.Stealth:
-                return $"The unit can not be targeted. If the unit makes a move, the effect is lost.";
+                return $"The unit can not be targeted {this.generateDurationDescription()}. If the unit makes a move, the effect is lost.";
             case EffectType.Cleanse:
                 return $"Remove all effects on the target.";
             case EffectType.Immunity:
-                return $"Prevent other effects from being applied on the unit.";
+                return $"Prevent other effects from being applied on the unit {this.generateDurationDescription()}.";
             case EffectType.Silence:
-                return $"Prevent the unit from applying any effects.";
+                return $"Prevent the unit from applying any effects {this.generateDurationDescription()}.";
             case EffectType.Endure:
-                return $"Prevent the units' HP from reducing below 1.";
+                return $"Prevent the units' HP from reducing below 1 {this.generateDurationDescription()}.";
             case EffectType.Bomb:
                 if(stackCount > 1)
                 return $"Explodes in {stackCount} turns and deals 25 damage."; //damage is undecided
@@ -168,19 +168,23 @@ public class Effect {
                 return $"The unit can not make moves for {stackCount} turns.";
                 else return $"The unit can not make moves for {stackCount} turn.";
             case EffectType.Confusion:
-                return $"Targets for the units' moves are chosen at random.";
+                return $"Targets for the units' moves are chosen at random {this.generateDurationDescription()}.";
             case EffectType.Cursed:
-                return $"The unit takes {stackCount} damage for every move made.";
+                return $"The unit takes {stackCount} damage for every move made {this.generateDurationDescription()}.";
             case EffectType.Energized:
-                return $"At the start of the turn the unit gains {stackCount} AP.";
+                return $"At the start of the turn the unit gains {stackCount} AP {this.generateDurationDescription()}.";
             case EffectType.Exhaust:
-                return $"At the start of the turn the unit loses {stackCount} AP.";
+                return $"At the start of the turn the unit loses {stackCount} AP {this.generateDurationDescription()}.";
             case EffectType.Bound:
-                return $"The unit can make only 1 move.";
+                return $"The unit can make only 1 move AP {this.generateDurationDescription()}.";
             default:
                 return "";
         }
         
+    }
+
+    public string generateDurationDescription() {
+        return $"for {this.stackCount} turns";
     }
 
 }
