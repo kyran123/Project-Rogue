@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler {
+public class Unit : MonoBehaviour, IPointerClickHandler {
 
     [SerializeField]
     public unitDisplay display;
@@ -19,15 +19,6 @@ public class Unit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IP
 
     public void OnPointerClick(PointerEventData pointerEventData) {
         if(canBeSelected) BattleManager.instance.unitSelected(this);
-    }
-
-    public void OnPointerEnter(PointerEventData pointerEventData) {
-        this.display.edManager.updateDescriptions(this.effects);
-        this.display.edManager.gameObject.SetActive(true);
-    }
-
-    public void OnPointerExit(PointerEventData pointerEventData) {
-        this.display.edManager.gameObject.SetActive(false);
     }
 
     public bool isEnemy() {
