@@ -23,33 +23,32 @@ public class EnemyAI : MonoBehaviour {
     List<Move> enemyMoves = new List<Move>();
 
     [SerializeField]
-    List<Target> Target = new List<Target>();
+    List<Target> targets = new List<Target>();
 
     [SerializeField]
     public float baseDoNothingMove = 20f;
 
     public void MoveSelection(Unit enemy, List<Unit> friendliesList) {
-        return;
-        List<Unit> friendlies = new List<Unit>();
+        enemy.moves.Clear();
+        this.targets.Clear();
         foreach(Unit friendly in friendliesList) {
-            if(friendly.Health > 0) friendlies.Add(friendly);
+            if(friendly.Health > 0 && !friendly.hasEffect(EffectType.Stealth)) targets.Add(new Target(friendly));
         }
-        this.Target.Clear();
         if(this.isSchizophrenic) this.personality = (Personalities)Random.Range(0, 5);
-        this.getTargetModifiers(enemy, friendlies);
-        if(this.Target.Count == 0) return;
-        Move move = this.getMove(enemy, friendlies);
+        if(this.targets.Count == 0) return;
+        this.getTargetModifiers(enemy);
+        Move move = this.getMove(enemy);
         if(move != null) enemy.addMove(move, null);
     }
 
-    public void getTargetModifiers(Unit enemy, List<Unit> friendlies) {
-        foreach(Unit friendly in friendlies) {
-            List<Modifier> mods = new List<Modifier>();
-            if(friendly.Health < (friendly.Health * 0.1f)) mods.Add(new Modifier(ModifierName.LowHP, friendly.Health));
-            if(friendly.Health > (friendly.Health * 0.75f)) mods.Add(new Modifier(ModifierName.HighHP, friendly.Health));
+    public void getTargetModifiers(Unit enemy) {
+        foreach(Target target in this.targets) {
+            Unit friendly = target.unit;
+            if(friendly.Health < (friendly.Health * 0.1f)) target.modifiers.Add(new Modifier(ModifierName.LowHP, friendly.Health));
+            if(friendly.Health > (friendly.Health * 0.75f)) target.modifiers.Add(new Modifier(ModifierName.HighHP, friendly.Health));
             
-            if(friendly.Speed > enemy.Speed) mods.Add(new Modifier(ModifierName.Faster, 1, true));
-            if(friendly.Speed < enemy.Speed) mods.Add(new Modifier(ModifierName.Slower, 1));
+            if(friendly.Speed > enemy.Speed) target.modifiers.Add(new Modifier(ModifierName.Faster, 1, true));
+            if(friendly.Speed < enemy.Speed) target.modifiers.Add(new Modifier(ModifierName.Slower, 1));
 
             foreach(Effect effect in friendly.effects) {
                 Modifier mod = new Modifier(ModifierName.Effect, 1);
@@ -63,19 +62,18 @@ public class EnemyAI : MonoBehaviour {
                         mod.inverted = true;
                         break;
                 }
-                mods.Add(mod);
+                target.modifiers.Add(mod);
             }
 
             foreach(Move move in friendly.moves) {
-                foreach(Unit target in move.damageTargets) {
-                    if(move.damage > target.Health) mods.Add(new Modifier(ModifierName.Kills, 5));
+                foreach(Unit damageTarget in move.damageTargets) {
+                    if(move.damage > damageTarget.Health) target.modifiers.Add(new Modifier(ModifierName.Kills, 5));
                 }
             }
-            if(!friendly.hasEffect(EffectType.Stealth)) this.Target.Add(new Target(friendly, mods));
         }
     }
 
-    public Move getMove(Unit enemy, List<Unit> friendlies) {
+    public Move getMove(Unit enemy) {
         //Getting the moves the enemy can actually use
         List<Move> usableMoves = new List<Move>();
 
@@ -85,6 +83,10 @@ public class EnemyAI : MonoBehaviour {
                 move.moveCost.HPCost < enemy.Health &&
                 move.moveCost.speedCost <= enemy.Speed
             ) {
+                move.damageTargets.Clear();
+                foreach(Effect effect in move.effects) {
+                    effect.targets.Clear();
+                }
                 usableMoves.Add(move);
             }
         }
@@ -111,8 +113,8 @@ public class EnemyAI : MonoBehaviour {
                     case EffectType.Exhaust:
                     case EffectType.Silence:
                     case EffectType.Stun:
-                        if(effect.targets.Contains(enemy)) effectValue -= 1;
-                        else effectValue += 1;
+                        if(effect.targets.Contains(enemy)) effectValue += 1;
+                        else effectValue -= 1;
                         break;
                     case EffectType.Shield:
                     case EffectType.Protect:
@@ -125,8 +127,8 @@ public class EnemyAI : MonoBehaviour {
                     case EffectType.Endure:
                     case EffectType.Resistance:
                     case EffectType.Energized:
-                        if(effect.targets.Contains(enemy)) effectValue += 1;
-                        else effectValue -= 1;
+                        if(effect.targets.Contains(enemy)) effectValue -= 1;
+                        else effectValue += 1;
                         break;
                     case EffectType.Oblivion:
                     case EffectType.Bomb:
@@ -139,8 +141,14 @@ public class EnemyAI : MonoBehaviour {
             }
             float moveWeight = ActionPointsLeft + HPLeft + (damageValue / 2) + isAOE + effectValue;
             //Get ideal target for the move
+            if(move.damageTargetType == targetType.ALLENEMIES) {
+                foreach(Target target in this.targets) {
+                    if(target.unit.Health > 0) move.damageTargets.Add(target.unit);
+                }
+                continue;
+            }
             MoveTargets idealTarget = null;
-            foreach(Target um in this.Target) {
+            foreach(Target um in this.targets) {
                 float value = 0;
                 if(damageValue > um.unit.Health) value += 15f;
                 if(this.hasModifier(um.modifiers, ModifierName.Kills) != null) {
@@ -193,7 +201,7 @@ public class EnemyAI : MonoBehaviour {
             totalValue += target.value;
         }
 
-        float randomNumber = Random.Range(0, totalValue);
+        float randomNumber = Mathf.Abs(Random.Range(0, totalValue));
         float floor = 0;
 
         for(int i = 0; i < moveTargets.Count; i++) {
@@ -247,9 +255,8 @@ public class MoveTargets {
 
 [System.Serializable]
 public class Target {
-    public Target(Unit unit, List<Modifier> mods) {
+    public Target(Unit unit) {
         this.unit = unit;
-        this.modifiers = mods;
     }
     [SerializeField]
     public Unit unit;

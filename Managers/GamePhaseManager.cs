@@ -46,6 +46,7 @@ public class GamePhaseManager {
                     this.highlightTargets(battleManager.enemyUnits);
                 } else {
                     this.setTargets(move, this.battleManager.enemyUnits, targetType.ALLENEMIES);
+                    this.setTargets(move, this.battleManager.friendlyUnits, targetType.ALLFRIENDLIES);
                     this.GamePhase = phase.End;
                     this.onPhaseUpdate();
                 }
@@ -72,7 +73,8 @@ public class GamePhaseManager {
 
     /// <summary> Sets the target unit in list as the damage target for the move </summary>
     public void setTargets(Move move, List<Unit> targets, targetType type) {
-        if(this.hasDamageTargetType(move, type)) move.damageTargets = targets;
+        if(!this.hasDamageTargetType(move, type)) return;
+        move.damageTargets = targets;
         foreach(Effect effect in move.effects) {
             if(effect.targetType == type) effect.targets = targets;
         }
@@ -95,7 +97,6 @@ public class GamePhaseManager {
     /// <summary> Returns boolean if the move has is meant for a single target </summary>
     public bool hasSingleTarget(Move move) {
         if(move.damageTargetType == targetType.ENEMY) return true;
-        if(this.hasEffectTargetType(move.effects, targetType.ENEMY)) return true;
         return false;
     }
 

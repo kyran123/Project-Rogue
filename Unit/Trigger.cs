@@ -28,7 +28,7 @@ public class Trigger {
     int triggerCount;
 
     [SerializeField]
-    EffectType effectType;
+    public EffectType effectType;
 
     public bool isValid(Unit unit, int value = 0) {
         switch(this.type) {

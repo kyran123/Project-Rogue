@@ -8,6 +8,8 @@ using TMPro;
 [System.Serializable]
 public class PileManager : MonoBehaviour {
     
+    public List<GameObject> tempCardPrefabs = new List<GameObject>();
+
     [Header("Draw Pile")]
     [SerializeField]
     public GameObject goDrawPile;
@@ -19,6 +21,19 @@ public class PileManager : MonoBehaviour {
     public GameObject goDiscardPile;
     public TMP_Text DiscardPilecount;
     public List<Card> discardPile = new List<Card>();
+
+    public void init() {
+        for(int i = 0; i <= 20; i++) {
+            GameObject obj = Instantiate(this.tempCardPrefabs[Random.Range(0, this.tempCardPrefabs.Count)]);
+            obj.transform.SetParent(this.goDrawPile.transform);
+            obj.SetActive(false);
+            obj.transform.localScale = new Vector3(1, 1, 1);
+            Card card = obj.GetComponent<Card>();
+            card.cardBehavior.handManager = BattleManager.instance.handManager;
+            card.cardDisplay.updateCardDisplay(card);
+            drawPile.Add(card);
+        }
+    }
 
     /// <summary> Discards the card given in parameter </summary>
     public void discardCard(Card card) {

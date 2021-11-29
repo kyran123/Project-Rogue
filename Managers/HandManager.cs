@@ -5,7 +5,7 @@ using UnityEngine;
 public class HandManager : MonoBehaviour {
 
     public Dictionary<int, List<float>> cardPos = new Dictionary<int, List<float>> {
-        { 0, new List<float> { } },
+        { 0, new List<float> { 0f } },
         { 1, new List<float> { -8.6f } },
         { 2, new List<float> { -8.6f, -8.6f } },
         { 3, new List<float> { -13.92f, -8.6f, -13.92f } },
@@ -30,6 +30,7 @@ public class HandManager : MonoBehaviour {
 
     public List<Card> cards;
     public Card onHoverCard;
+    public int maxCardsInHand = 8;
 
     public CardBehavior selectedCard = null;
 
@@ -69,8 +70,12 @@ public class HandManager : MonoBehaviour {
 
     public void drawCard(int count) {
         for(int i = 0; i < count; i++) {
-            Card card = BattleManager.instance.pileManager.draw();
-            this.addCard(card);
+            if(this.cards.Count < maxCardsInHand) {
+                Card card = BattleManager.instance.pileManager.draw();
+                this.addCard(card);
+            } else {
+                return;
+            }
         }
     }
 

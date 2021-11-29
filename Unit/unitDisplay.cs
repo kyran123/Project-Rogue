@@ -28,16 +28,21 @@ public class unitDisplay : MonoBehaviour {
     public EffectDescriptionManager edManager;
 
     ///<summary>Update effect icons</summary>
-    public void updateIcons(List<Effect> effects) {
-        foreach(Effect effect in effects) {
-            if(!this.effectsOnUnit.ContainsKey(effect.type)) {
-                GameObject obj = Instantiate(this.getIconPrefab(effect.type));
-                obj.transform.SetParent(this.effectGrid.transform);
-                obj.transform.localPosition = new Vector3(0, 0 ,0);
-                obj.transform.localScale = new Vector3(1, 1, 1);
-                this.effectsOnUnit.Add(effect.type, obj);
-            } 
-            this.effectsOnUnit[effect.type].GetComponent<Icon>().updateIcon(effect);
+    public void updateIcons(List<Effect> effects, int index) {
+        if(effects.Count == 0) return;
+        Effect effect = effects[index];
+        if(!this.effectsOnUnit.ContainsKey(effect.type)) {
+            GameObject obj = Instantiate(this.getIconPrefab(effect.type));
+            obj.transform.SetParent(this.effectGrid.transform);
+            obj.transform.localPosition = new Vector3(0, 0 ,0);
+            obj.transform.localScale = new Vector3(1, 1, 1);
+            this.effectsOnUnit.Add(effect.type, obj);
+        }
+        if(effect.stackCount < 1) this.removeEffectIcon(effect);
+        else this.effectsOnUnit[effect.type].GetComponent<Icon>().updateIcon(effect);
+        if(index < (effects.Count - 1)) {
+            index++;
+            this.updateIcons(effects, index);
         }
     }
 
@@ -85,7 +90,7 @@ public class unitDisplay : MonoBehaviour {
         this.updateHealthBar(unit.Health, unit.MaxHealth);
         this.updateAP(unit.ActionPoints);
         this.updateSpeed(unit.getSpeed());
-        this.updateIcons(unit.effects);
+        this.updateIcons(unit.effects, 0);
     }
 
     ///<summary>Turn order appendage</summary>

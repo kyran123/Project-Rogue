@@ -38,9 +38,11 @@ public class BattleManager : MonoBehaviour {
         List<Unit> units = this.getAllUnits();
         this.allUnits.AddRange(units);
         this.setupUnits(units);
+        this.pileManager.init();
         this.pileManager.updateCardCounts();
         this.resetSortedList();
         this.sortList(this.allUnits);
+        this.handManager.drawCard(this.drawPerTurn);
     }
 
     /// <summary> Gets all units and returns the list </summary>
@@ -54,11 +56,11 @@ public class BattleManager : MonoBehaviour {
     /// <summary> Updates all stats of the units at the start of the battle </summary>
     public void setupUnits(List<Unit> units) {
         foreach(Unit unit in units) {
-            unit.receiveDamage(Random.Range(1f, 15f)); //Temporary
+            //unit.receiveDamage(Random.Range(1f, 15f)); //Temporary
             unit.display.updateAP(unit.ActionPoints);
             unit.display.updateSpeed(unit.getSpeed());
             unit.display.updateHealthBar(unit.Health, unit.MaxHealth);
-            unit.display.updateIcons(unit.effects);
+            unit.display.updateIcons(unit.effects, 0);
             unit.display.edManager.setSkillDescriptions(unit);
             unit.display.edManager.updateDescriptions(unit.effects);
         }
@@ -91,7 +93,6 @@ public class BattleManager : MonoBehaviour {
 
     public void EndTurn() {
         this.handManager.discardCards();
-        this.applyUnitEffects(0);
         this.unitTurn();
     }
 
@@ -99,9 +100,14 @@ public class BattleManager : MonoBehaviour {
         Unit unit = this.getNextUnit();
 
         if(this.battleIsOver) return;
+        
+        unit.applyEffects(0);
+        unit.removeFinishedEffects();
         if(unit.isEnemy() && !unit.hasEffect(EffectType.Stun)) unit.enemyAI.MoveSelection(unit, this.friendlyUnits);
 
         if(unit.moves.Count > 0) unit.executeMoves();
+        unit.reduceEffectCount();
+        unit.display.updateIcons(unit.effects, 0);
         this.sortedUnits.Remove(unit);
 
         if(this.sortedUnits.Count > 0) this.unitTurn();
@@ -118,20 +124,12 @@ public class BattleManager : MonoBehaviour {
     public void finishUnitTurns() {
         this.resetSortedList();
         foreach(Unit unit in this.allUnits) {
-            unit.reduceEffectCount();
             unit.changeActionPoints(-this.actionPointsPerTurn);
             unit.display.updateAP(unit.ActionPoints);
         }
         this.handManager.drawCard(this.drawPerTurn);
         this.drawCount = 0;
     }
-
-    public void applyUnitEffects(int index) {
-        this.allUnits[index].applyEffects();
-        index++;
-        if(index < this.allUnits.Count) this.applyUnitEffects(index);
-    }
-
     #endregion
 
     #region Cards

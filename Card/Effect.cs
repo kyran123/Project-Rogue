@@ -42,8 +42,12 @@ public class Effect {
     public bool maintain;
     [SerializeField]
     public targetType targetType;
+    [Space(10)]
     [SerializeField]
     public List<Unit> targets;
+
+    [SerializeField]
+    public bool firstTurn = true;
 
 
     public Effect instantiate(Effect effect) {
@@ -71,16 +75,15 @@ public class Effect {
             case EffectType.Bomb:
                 if(--this.stackCount == 0) unit.modifyHealth(25); // damage is undecided
                 break;
-            case EffectType.Energized:
-                unit.changeActionPoints(-this.stackCount--);
-                break;
-            case EffectType.Exhaust:
-                unit.changeActionPoints(this.stackCount--);
-                break;
+            
         }
     }
 
     public void reduceStackCount(Unit unit) {
+        if(this.firstTurn) {
+            this.firstTurn = false;
+            return;
+        }
         switch(this.type) {
             case EffectType.Slow:
             case EffectType.Stealth:
@@ -100,6 +103,12 @@ public class Effect {
             case EffectType.Endure:
             case EffectType.Silence:
                 this.stackCount--;              
+                break;
+            case EffectType.Energized:
+                unit.changeActionPoints(-this.stackCount--);
+                break;
+            case EffectType.Exhaust:
+                unit.changeActionPoints(this.stackCount--);
                 break;
         }
     }

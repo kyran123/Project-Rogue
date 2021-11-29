@@ -22,11 +22,14 @@ public class EffectDescriptionManager : MonoBehaviour {
     public void updateDescriptions(List<Effect> effects) {
         foreach(Effect effect in effects) {
             if(this.descriptions.ContainsKey(effect.type)) {
-                this.descriptions[effect.type].GetComponent<EffectDescription>().updateText(effect.generateTitle(), effect.generateEffectDescription());
+                if(effect.stackCount == 0) this.removeDescription(effect);
+                else this.descriptions[effect.type].GetComponent<EffectDescription>().updateText(effect.generateTitle(), effect.generateEffectDescription());
             } else {
-                GameObject obj = this.instantiatePrefab(descriptionPrefab);
-                this.descriptions.Add(effect.type, obj);
-                obj.GetComponent<EffectDescription>().updateText(effect.generateTitle(), effect.generateEffectDescription());
+                if(effect.stackCount > 0) {
+                    GameObject obj = this.instantiatePrefab(descriptionPrefab);
+                    this.descriptions.Add(effect.type, obj);
+                    obj.GetComponent<EffectDescription>().updateText(effect.generateTitle(), effect.generateEffectDescription());
+                }
             }
         }
     }

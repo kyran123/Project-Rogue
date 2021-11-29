@@ -48,7 +48,6 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         else this.health -= value;
         if(this.health > this.maxHealth) this.health = this.maxHealth;
         if(this.health <= 0) { //unit dies
-            this.health = 0;
             this.cleanse();
             this.die();
             return;
@@ -59,9 +58,8 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
 
         //Send out skill triggers
         if(value < 0) this.EventTrigger(TriggerType.Healed, value);
-        else this.EventTrigger(TriggerType.DamageReceived, value);
-        this.EventTrigger(TriggerType.HealthAbove);
-        this.EventTrigger(TriggerType.HealthLower);
+        this.EventTrigger(TriggerType.HealthAbove, this.Health);
+        this.EventTrigger(TriggerType.HealthLower, this.Health);
     }
 
     public void receiveDamage(float value) {
@@ -84,18 +82,22 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     }
 
     public void die() {
-        this.EventTrigger(TriggerType.OnDeath);
+        Debug.Log($"Unit {this.unitName} dying...");
+        this.EventTrigger(TriggerType.OnDeath, 0);
         this.gameObject.SetActive(false);
         BattleManager.instance.allUnits.Remove(this);
         BattleManager.instance.sortedUnits.Remove(this);
         if(this.isEnemy()) BattleManager.instance.enemyUnits.Remove(this);
         else BattleManager.instance.friendlyUnits.Remove(this);
-        BattleManager.instance.sortList(BattleManager.instance.allUnits);
         BattleManager.instance.checkWinLossCondition();
     }
 
     public void dealDamage(Unit target, Move move) {
-        if(this.calculateAttackDamage(move.damage) > target.Health) this.EventTrigger(TriggerType.OnKill);
+        if(move.damage < 0) {
+            target.modifyHealth(move.damage);
+            return;
+        } 
+        if(this.calculateAttackDamage(move.damage) > target.Health) this.EventTrigger(TriggerType.OnKill, 0);
         target.receiveDamage(this.calculateAttackDamage(move.damage));
         //Check for effects
         if(target.hasEffect(EffectType.Thorns)) this.receiveDamage(target.getEffectByType(EffectType.Thorns).stackCount);
@@ -103,7 +105,8 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         if(this.hasEffect(EffectType.Lifesteal)) {
             this.modifyHealth(-Mathf.RoundToInt(this.calculateAttackDamage(move.damage)));
         }
-        this.EventTrigger(TriggerType.DamageDealt, move.damage);
+        this.EventTrigger(TriggerType.DamageDealt, move.damage, this, target);
+        this.EventTrigger(TriggerType.DamageReceived, move.damage, target, this);
     }
 
     public int calculateAttackDamage(float damage) {
@@ -132,8 +135,9 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         //Positive value = remove AP / Negative alue = add AP
         this.actionPoints -= value;
         if(this.actionPoints > this.MaxActionPoints) this.actionPoints = this.MaxActionPoints;
-        this.EventTrigger(TriggerType.APAbove);
-        this.EventTrigger(TriggerType.APLower);
+        if(this.actionPoints < 0) this.actionPoints = 0;
+        this.EventTrigger(TriggerType.APAbove, this.ActionPoints);
+        this.EventTrigger(TriggerType.APLower, this.ActionPoints);
     }
 
     #endregion
@@ -166,8 +170,8 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public void modifySpeed(int value) {
         //Positive value = reduce speed / Negatie value = increase speed
         this.speed -= value;
-        this.EventTrigger(TriggerType.SpeedAbove);
-        this.EventTrigger(TriggerType.SpeedLower);
+        this.EventTrigger(TriggerType.SpeedAbove, this.getSpeed());
+        this.EventTrigger(TriggerType.SpeedLower, this.getSpeed());
     } 
 
     #endregion
@@ -188,21 +192,22 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         if(this.moves.Count >= this.getMaxMoves()) return;
         this.moves.Add(move);
         if(card != null) this.addTile(card);
-        this.EventTrigger(TriggerType.MoveCount);
+        this.EventTrigger(TriggerType.MoveCount, this.moves.Count);
         this.display.updateAllUnitInfo(this);
     }
 
     public void removeMove(Move move) {
         if(this.moves.Contains(move)) {
             moves.Remove(move);
-            this.EventTrigger(TriggerType.MoveCount);
+            this.EventTrigger(TriggerType.MoveCount, this.moves.Count);
         }
     }
 
     ///<summary> Removes all moves </summary>
     public void removeMoves() {
+        if(this.isEnemy()) return;
         this.moves = new List<Move>();
-        this.EventTrigger(TriggerType.MoveCount);
+        this.EventTrigger(TriggerType.MoveCount, this.moves.Count);
     }
 
     public List<Effect> effectsToAdd = new List<Effect>();
@@ -222,34 +227,32 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
 
     /// <summary> Execute move on target </summary>
     public void executeMove(Move move, int index) {
-        if(this.hasEffect(EffectType.Stun)) return;
-        Unit target = move.damageTargets[index];
-        if(this.hasEffect(EffectType.Confusion)) {
-            if(this.isEnemy()) {
-                target = BattleManager.instance.friendlyUnits[Random.Range(0, BattleManager.instance.friendlyUnits.Count)];
-            } else {
-                target = BattleManager.instance.enemyUnits[Random.Range(0, BattleManager.instance.enemyUnits.Count)];
+        if(!this.hasEffect(EffectType.Stun)) {
+            Unit target = move.damageTargets[index];
+            if(this.hasEffect(EffectType.Confusion)) {
+                if(this.isEnemy()) {
+                    target = BattleManager.instance.friendlyUnits[Random.Range(0, BattleManager.instance.friendlyUnits.Count)];
+                } else {
+                    target = BattleManager.instance.enemyUnits[Random.Range(0, BattleManager.instance.enemyUnits.Count)];
+                }
             }
-        }
-        if(this.hasEffect(EffectType.Cursed)) this.modifyHealth(this.getEffectByType(EffectType.Cursed).stackCount);
-        if(!BattleManager.instance.isTargetAvailable(target, move)) {
-            this.executeMove(move, ++index); 
-            return;   
-        } 
-        Unit protectUnit = BattleManager.instance.getProtectUnit(BattleManager.instance.getUnitListByType(target));
-        if(protectUnit != null) target = protectUnit;
-        this.dealDamage(target, move);
-        if(this.hasEffect(EffectType.Silence)) return;
-        foreach(Effect effect in move.effects) {
-            foreach(Unit t in effect.targets) {
-                if(move.hasEffectByType(EffectType.Cleanse)) t.cleanse();
-                else if(t.isEnemy()) t.addEffect(effect);
-                else if(!effectsToAdd.Contains(effect)) effectsToAdd.Add(effect);
+            if(this.hasEffect(EffectType.Cursed)) this.modifyHealth(this.getEffectByType(EffectType.Cursed).stackCount);
+            if(move.damage > 0) {
+                Unit protectUnit = BattleManager.instance.getProtectUnit(BattleManager.instance.getUnitListByType(target));
+                if(protectUnit != null) target = protectUnit;
             }
-        }
-        if(this.hasEffect(EffectType.Stealth)) {
-            this.display.removeEffectIcon(this.getEffectByType(EffectType.Stealth));
-            this.effects.Remove(this.getEffectByType(EffectType.Stealth));
+            this.dealDamage(target, move);
+            if(!this.hasEffect(EffectType.Silence)) {
+                foreach(Effect effect in move.effects) {
+                    if(move.hasEffectByType(EffectType.Cleanse)) target.cleanse();
+                    else if(target.isEnemy()) target.addEffect(effect);
+                    else if(!effectsToAdd.Contains(effect)) effectsToAdd.Add(effect);
+                }
+            }
+            if(this.hasEffect(EffectType.Stealth)) {
+                this.display.removeEffectIcon(this.getEffectByType(EffectType.Stealth));
+                this.effects.Remove(this.getEffectByType(EffectType.Stealth));
+            }   
         }
         index++;
         if(index < move.damageTargets.Count) this.executeMove(move, index);
@@ -281,7 +284,7 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     [SerializeField]
     public List<Effect> effects = new List<Effect>();
 
-    public void addEffect(Effect effect) {
+    public void addEffect(Effect effect, bool appliedToItself = false) {
         if(this.hasEffect(EffectType.Immunity)) return;
         if(effect.type == EffectType.Cleanse) return;
         if(this.hasEffect(effect.type)) {
@@ -289,8 +292,8 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         } else {
             this.effects.Add(new Effect().instantiate(effect));
         }
-        this.display.updateIcons(this.effects);
-        this.EventTrigger(TriggerType.Effect);
+        this.display.updateIcons(this.effects, 0);
+        this.EventTrigger(TriggerType.Effect, effect.type);
     }
 
     public Effect getEffectByType(EffectType type) {
@@ -313,18 +316,23 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public void reduceEffectCount() {
         foreach(Effect effect in this.effects) {
             effect.reduceStackCount(this);
+            this.display.updateIcons(this.effects, this.effects.IndexOf(effect));
+            if(effect.stackCount > 0) this.display.edManager.updateDescriptions(this.effects);
+            else this.display.edManager.removeDescription(effect);
         }
     }
 
     /// <summary> Apply all effects on the unit </summary>
-    public void applyEffects() {
-        if(this.hasEffect(EffectType.Bomb)) this.getEffectByType(EffectType.Bomb).apply(this);
-        foreach(Effect effect in this.effects) {
-            if(effect.type == EffectType.Bomb) continue;
+    public void applyEffects(int index) {
+        if(this.effects.Count == 0) return;
+        Effect effect = this.effects[index];
+        if(effect.type != EffectType.Bomb) {
             effect.apply(this);
         }
-        this.removeFinishedEffects();
-        this.display.updateIcons(this.effects);
+        index++;
+        if(index < this.effects.Count) this.applyEffects(index);
+        else this.display.updateIcons(this.effects, 0);
+        this.display.edManager.updateDescriptions(this.effects);
     }
 
     public void removeFinishedEffects() {
@@ -360,6 +368,7 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public List<Movedisplay> tiles = new List<Movedisplay>();
 
     public void addTile(Card card) {
+        card.cardBehavior.handManager = BattleManager.instance.handManager;
         this.cards.Add(card);
         int index = this.cards.Count - 1;
         this.tiles[index].updateCardData(card);
@@ -379,9 +388,22 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
 
     public List<Skill> skills = new List<Skill>();
 
-    public void EventTrigger(TriggerType type, int value = 0) {
+    public void EventTrigger(TriggerType type, int value) {
         foreach(Skill skill in this.skills) {
-            skill.eventTrigger(type, this, value);
+            skill.eventTrigger(type, this, this, value);
+        }
+    }
+
+    public void EventTrigger(TriggerType type, EffectType effectType) {
+        foreach(Skill skill in this.skills) {
+            skill.eventTrigger(type, effectType, this);
+        }
+    }
+
+    public void EventTrigger(TriggerType type, int value, Unit unit, Unit target) {
+        foreach(Skill skill in unit.skills) {
+            if(skill.target == targetType.ENEMY) skill.eventTrigger(type, target, unit, value);
+            else skill.eventTrigger(type, unit, target, value);
         }
     }
 
