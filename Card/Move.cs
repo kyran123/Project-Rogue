@@ -7,7 +7,8 @@ public enum targetType {
     FRIENDLY,
     ENEMY,
     ALLENEMIES,
-    ALLFRIENDLIES
+    ALLFRIENDLIES,
+    BOTH //Artifacts only!
 }
 
 [System.Serializable]
@@ -32,7 +33,7 @@ public class Move {
     public List<Unit> damageTargets;
 
     [SerializeField]
-    public List<Effect> effects;
+    public List<Effect> effects = new List<Effect>();
 
     public bool hasEffectByType(EffectType type) {
         foreach(Effect effect in this.effects) {
@@ -41,6 +42,15 @@ public class Move {
             }
         }
         return false;
+    }
+
+    public Effect getEffectByType(EffectType type) {
+        foreach(Effect effect in this.effects) {
+            if(effect.type == type) {
+                return effect;
+            }
+        }
+        return null;
     }
 }
 

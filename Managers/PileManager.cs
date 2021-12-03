@@ -8,6 +8,7 @@ using TMPro;
 [System.Serializable]
 public class PileManager : MonoBehaviour {
     
+    public GameObject cardTemplatePrefab;
     public List<GameObject> tempCardPrefabs = new List<GameObject>();
 
     [Header("Draw Pile")]
@@ -24,15 +25,63 @@ public class PileManager : MonoBehaviour {
 
     public void init() {
         for(int i = 0; i <= 20; i++) {
-            GameObject obj = Instantiate(this.tempCardPrefabs[Random.Range(0, this.tempCardPrefabs.Count)]);
-            obj.transform.SetParent(this.goDrawPile.transform);
-            obj.SetActive(false);
-            obj.transform.localScale = new Vector3(1, 1, 1);
-            Card card = obj.GetComponent<Card>();
-            card.cardBehavior.handManager = BattleManager.instance.handManager;
-            card.cardDisplay.updateCardDisplay(card);
-            drawPile.Add(card);
+            this.createCard();
         }
+    }
+
+    public void createCard() {
+        GameObject obj = Instantiate(this.tempCardPrefabs[Random.Range(0, this.tempCardPrefabs.Count)]);
+        obj.transform.SetParent(this.goDrawPile.transform);
+        obj.SetActive(false);
+        obj.transform.localScale = new Vector3(1, 1, 1);
+        Card card = obj.GetComponent<Card>();
+        card.cardBehavior.handManager = BattleManager.instance.handManager;
+        card.cardDisplay.updateCardDisplay(card);
+        drawPile.Add(card);
+    }
+
+    public Card createCard(int min, int max) {
+        GameObject obj = Instantiate(this.tempCardPrefabs[Random.Range(0, this.tempCardPrefabs.Count)]);
+        obj.transform.SetParent(this.goDrawPile.transform);
+        obj.SetActive(false);
+        obj.transform.localScale = new Vector3(1, 1, 1);
+        Card card = obj.GetComponent<Card>();
+        card.APcost = Random.Range(min, max);
+        card.speedCost = Random.Range(min, max);
+        card.HPCost = Random.Range(min, max);
+        card.cardBehavior.handManager = BattleManager.instance.handManager;
+        card.cardDisplay.updateCardDisplay(card);
+        return card;
+    }
+
+    public Card createCard(int min, int max, int effectCount, bool consumed) {
+        GameObject obj = Instantiate(this.cardTemplatePrefab);
+        obj.transform.SetParent(this.goDrawPile.transform);
+        obj.SetActive(false);
+        obj.transform.localScale = new Vector3(1, 1, 1);
+        Card card = obj.GetComponent<Card>();
+        card.APcost = Random.Range(min, max);
+        card.speedCost = Random.Range(min, max);
+        card.HPCost = Random.Range(min, max);
+        Move move = new Move();
+        move.moveName = "Divine intervention";
+        move.damage = Random.Range(min, max);
+        move.damageTargetType = (targetType)Random.Range(1, 6);
+        for(int i = 0; i < effectCount; i++) {
+            Effect effect = new Effect();
+            effect.type = (EffectType)Random.Range(0, 26);
+            effect.stackCount = Random.Range(min, max);
+            effect.targetType = (targetType)Random.Range(1, 6);
+            if(move.hasEffectByType(effect.type)) {
+                move.getEffectByType(effect.type).stackCount += effect.stackCount;
+            } else {
+                move.effects.Add(effect);
+            }
+        }
+        card.Move = move;
+        card.cardBehavior.handManager = BattleManager.instance.handManager;
+        card.cardDisplay.updateCardDisplay(card);
+        return card;
     }
 
     /// <summary> Discards the card given in parameter </summary>

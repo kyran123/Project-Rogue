@@ -13,12 +13,14 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
 
     [SerializeField]
     public bool canBeSelected = false;
+    public bool canUseEquipmentOn = false;
 
     [SerializeField]
     public EnemyAI enemyAI;
 
     public void OnPointerClick(PointerEventData pointerEventData) {
         if(canBeSelected) BattleManager.instance.unitSelected(this);
+        if(this.canUseEquipmentOn) BattleManager.instance.equipmentUse(this);
     }
 
     public bool isEnemy() {
@@ -39,13 +41,20 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     protected int maxHealth;
     public int MaxHealth { 
         get { return this.maxHealth; } 
+        set { this.maxHealth = value; }
     }
 
     public void modifyHealth(int value) {
         //Positive value = do damage / Negative value = heal
         if(value < 0 && this.hasEffect(EffectType.Heartless)) return;
-        if(this.hasEffect(EffectType.Endure) && value >= this.health) this.health = 1;
-        else this.health -= value;
+        if(this.hasEffect(EffectType.Endure) && value >= this.health) {
+            if(value > 0) BattleManager.instance.artifactManager.eventTrigger(ArtifactTriggerType.ReceiveDamage, this, (value - (this.health - 1)));
+            this.health = 1;
+        } 
+        else {
+            if(value > 0) BattleManager.instance.artifactManager.eventTrigger(ArtifactTriggerType.ReceiveDamage, this, value);
+            this.health -= value;
+        } 
         if(this.health > this.maxHealth) this.health = this.maxHealth;
         if(this.health <= 0) { //unit dies
             this.cleanse();
@@ -61,6 +70,12 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         this.EventTrigger(TriggerType.HealthAbove, this.Health);
         this.EventTrigger(TriggerType.HealthLower, this.Health);
     }
+
+    #endregion
+
+    #region DAMAGE
+
+    public int bonusDamage = 0;
 
     public void receiveDamage(float value) {
         //Apply effects to base damage
@@ -84,6 +99,7 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public void die() {
         Debug.Log($"Unit {this.unitName} dying...");
         this.EventTrigger(TriggerType.OnDeath, 0);
+        BattleManager.instance.artifactManager.eventTrigger(ArtifactTriggerType.Death, this);
         this.gameObject.SetActive(false);
         BattleManager.instance.allUnits.Remove(this);
         BattleManager.instance.sortedUnits.Remove(this);
@@ -97,7 +113,11 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
             target.modifyHealth(move.damage);
             return;
         } 
-        if(this.calculateAttackDamage(move.damage) > target.Health) this.EventTrigger(TriggerType.OnKill, 0);
+        if(this.calculateAttackDamage(move.damage) > target.Health){
+            this.EventTrigger(TriggerType.OnKill, 0);
+            BattleManager.instance.artifactManager.eventTrigger(ArtifactTriggerType.Kill, this);
+        } 
+        BattleManager.instance.artifactManager.eventTrigger(ArtifactTriggerType.DealDamage, this, this.calculateAttackDamage(move.damage));
         target.receiveDamage(this.calculateAttackDamage(move.damage));
         //Check for effects
         if(target.hasEffect(EffectType.Thorns)) this.receiveDamage(target.getEffectByType(EffectType.Thorns).stackCount);
@@ -112,6 +132,7 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public int calculateAttackDamage(float damage) {
         if(this.getEffectByType(EffectType.Strength) != null) damage *= 1.25f;
         if(this.getEffectByType(EffectType.Weak) != null) damage *= 0.75f;
+        damage += this.bonusDamage;
         return (int)damage;
     }
 
@@ -191,7 +212,10 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public void addMove(Move move, Card card) {
         if(this.moves.Count >= this.getMaxMoves()) return;
         this.moves.Add(move);
-        if(card != null) this.addTile(card);
+        if(card != null) {
+            if(move.damageTargets.Count > 0) this.addTile(card, this, move.damageTargets[0]);
+            else this.addTile(card, this);
+        } 
         this.EventTrigger(TriggerType.MoveCount, this.moves.Count);
         this.display.updateAllUnitInfo(this);
     }
@@ -244,9 +268,14 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
             this.dealDamage(target, move);
             if(!this.hasEffect(EffectType.Silence)) {
                 foreach(Effect effect in move.effects) {
-                    if(move.hasEffectByType(EffectType.Cleanse)) target.cleanse();
-                    else if(target.isEnemy()) target.addEffect(effect);
-                    else if(!effectsToAdd.Contains(effect)) effectsToAdd.Add(effect);
+                    if(effect.targetType == targetType.ENEMY) {
+                        if(this.isEnemy()) target.addEffect(effect);
+                        else this.effectsToAdd.Add(effect); 
+                    }
+                    if(effect.targetType == targetType.FRIENDLY) {
+                        if(this.isEnemy()) this.effectsToAdd.Add(effect);
+                        else target.addEffect(effect);
+                    }                    
                 }
             }
             if(this.hasEffect(EffectType.Stealth)) {
@@ -261,9 +290,13 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public void addEffectsToFriendly() {
         if(this.effectsToAdd.Count > 0) { 
             foreach(Effect effect in this.effectsToAdd) {
-                foreach(Unit target in effect.targets) {
-                    target.addEffect(effect);
-                }
+                if(effect.targets.Count > 0) {
+                    foreach(Unit target in effect.targets) {
+                        target.addEffect(effect);
+                    }
+                } else {
+                    this.addEffect(effect);
+                }                
             }
         }
     }
@@ -283,7 +316,8 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
 
     [SerializeField]
     public List<Effect> effects = new List<Effect>();
-
+    public List<Effect> effectsToAddAfter = new List<Effect>();
+    
     public void addEffect(Effect effect, bool appliedToItself = false) {
         if(this.hasEffect(EffectType.Immunity)) return;
         if(effect.type == EffectType.Cleanse) return;
@@ -291,6 +325,7 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
             this.getEffectByType(effect.type).stackCount += effect.stackCount;
         } else {
             this.effects.Add(new Effect().instantiate(effect));
+
         }
         this.display.updateIcons(this.effects, 0);
         this.EventTrigger(TriggerType.Effect, effect.type);
@@ -320,6 +355,10 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
             if(effect.stackCount > 0) this.display.edManager.updateDescriptions(this.effects);
             else this.display.edManager.removeDescription(effect);
         }
+        foreach(Effect effect in this.effectsToAddAfter) {
+            this.addEffect(effect);
+        }
+        this.effectsToAddAfter.Clear();
     }
 
     /// <summary> Apply all effects on the unit </summary>
@@ -367,11 +406,11 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     public List<Card> cards = new List<Card>();
     public List<Movedisplay> tiles = new List<Movedisplay>();
 
-    public void addTile(Card card) {
+    public void addTile(Card card, Unit selectedUnit = null, Unit targetedUnit = null) {
         card.cardBehavior.handManager = BattleManager.instance.handManager;
         this.cards.Add(card);
         int index = this.cards.Count - 1;
-        this.tiles[index].updateCardData(card);
+        this.tiles[index].updateCardData(card, selectedUnit, targetedUnit);
         this.tiles[index].gameObject.SetActive(true);
     }
 

@@ -12,6 +12,8 @@ public class BattleManager : MonoBehaviour {
     public HandManager handManager;
     public PileManager pileManager;
     public MenuManager menuManager;
+    public ArtifactManager artifactManager;
+    public EquipmentManager equipmentManager;
     
     [Header("Unit lists")]
     [SerializeField]
@@ -92,6 +94,7 @@ public class BattleManager : MonoBehaviour {
     #region END TURN
 
     public void EndTurn() {
+        this.artifactManager.eventTrigger(ArtifactTriggerType.Turn, null, 0);
         this.handManager.discardCards();
         this.unitTurn();
     }
@@ -127,6 +130,8 @@ public class BattleManager : MonoBehaviour {
             unit.changeActionPoints(-this.actionPointsPerTurn);
             unit.display.updateAP(unit.ActionPoints);
         }
+        this.artifactManager.eventTrigger(ArtifactTriggerType.Turn, null, 1);
+        this.artifactManager.resetTriggers();
         this.handManager.drawCard(this.drawPerTurn);
         this.drawCount = 0;
     }
@@ -136,6 +141,19 @@ public class BattleManager : MonoBehaviour {
 
     public void drawCard(int count) {
         this.handManager.drawCard(count);
+    }
+
+    public void drawCard(Card card) {
+        this.handManager.addCard(card);
+        this.pileManager.updateCardCounts();
+        card.gameObject.SetActive(true);
+    }
+
+    public Card getRandomCard() {
+        if(this.handManager.cards.Count > 0) return this.handManager.cards[Random.Range(0, this.handManager.cards.Count - 1)];
+        else if(this.pileManager.drawPile.Count > 0) return this.pileManager.drawPile[Random.Range(0, this.pileManager.drawPile.Count - 1)];
+        else if(this.pileManager.discardPile.Count > 0) return this.pileManager.discardPile[Random.Range(0, this.pileManager.discardPile.Count - 1)];
+        else return null;
     }
 
     public void discardCard(Card card) {
@@ -216,5 +234,44 @@ public class BattleManager : MonoBehaviour {
             }
             this.setGamePhase(phase.Target);
         }
+    }
+
+    
+    public List<Unit> targets = new List<Unit>();
+
+
+    public void highlightTargets(targetType type) {
+        this.targets.Clear();
+        switch(type) {
+            case targetType.ALLFRIENDLIES:
+            case targetType.FRIENDLY:
+                this.targets.AddRange(this.friendlyUnits);
+                break;
+            case targetType.ALLENEMIES:
+            case targetType.ENEMY:
+                this.targets.AddRange(this.enemyUnits);
+                break;
+            case targetType.BOTH:
+                this.targets.AddRange(this.allUnits);
+                break;
+        }
+        foreach(Unit unit in targets) {
+            unit.display.setHighlight(true);
+            unit.canUseEquipmentOn = true;
+        }
+    }
+
+    public void unHighlightTargets() {
+        foreach(Unit unit in this.allUnits) {
+            unit.display.setHighlight(false);
+        }
+    }
+
+    public void equipmentUse(Unit unit) {
+        foreach(Unit target in targets) {
+            target.canUseEquipmentOn = false;
+            target.display.setHighlight(false);
+        }
+        this.equipmentManager.use(targets, unit);
     }
 }

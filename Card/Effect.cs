@@ -42,12 +42,13 @@ public class Effect {
     public bool maintain;
     [SerializeField]
     public targetType targetType;
-    [Space(10)]
     [SerializeField]
     public List<Unit> targets;
 
     [SerializeField]
     public bool firstTurn = true;
+
+    public Effect afterEffect;
 
 
     public Effect instantiate(Effect effect) {
@@ -56,6 +57,15 @@ public class Effect {
         this.maintain = effect.maintain;
         this.targetType = effect.targetType;
         this.targets = effect.targets;
+        return this;
+    }
+
+    public Effect instantiate(EffectType type, int stackCount, bool maintain, targetType targetType, List<Unit> units = null) {
+        this.type = type;
+        this.stackCount = stackCount;
+        this.maintain = maintain;
+        this.targetType = targetType;
+        if(units != null) this.targets = units;
         return this;
     }
 
@@ -99,10 +109,13 @@ public class Effect {
             case EffectType.Bound:
             case EffectType.Cursed:
             case EffectType.Confusion:
-            case EffectType.Stun:
+            case EffectType.Stun:   
+            case EffectType.Silence:    
+                this.stackCount--; 
+                break;
             case EffectType.Endure:
-            case EffectType.Silence:
-                this.stackCount--;              
+                this.stackCount--;
+                unit.effectsToAddAfter.Add(new Effect().instantiate(EffectType.Slow, 2, false, targetType.FRIENDLY, new List<Unit>() { unit }));
                 break;
             case EffectType.Energized:
                 unit.changeActionPoints(-this.stackCount--);
@@ -118,12 +131,13 @@ public class Effect {
         "this unit",
         "an enemy",
         "all enemy units",
-        "all friendly units"
+        "all friendly units",
+        "all units"
     };
     ///<summary>returns a string</summary>
     public string generateDescription() {
         //stackcount effect type name 'to' target name
-        return $"Apply {this.stackCount} {this.type.ToString()} to {this.targetNames[(int)this.targetType]}.";
+        return $"Apply {this.stackCount} <sprite name=\"{this.type.ToString()}\"> to {this.targetNames[(int)this.targetType]}.";
     }
     ///<summary>returns a string</summary>
     public string generateTitle() {

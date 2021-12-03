@@ -13,7 +13,7 @@ public class Card : MonoBehaviour {
 
     [SerializeField]
     //If it's positive, we reduce it. If negative we increase it
-    protected int APcost;
+    public int APcost;
 
     public int APCost {
         get { return this.APcost; }
@@ -32,5 +32,13 @@ public class Card : MonoBehaviour {
     protected Move move;
     public Move Move {
         get { return this.move; }
+        set { this.move = value; }
+    }
+
+    public void updateCost(ArtifactCardCost cardCost) {
+        this.APcost -= cardCost.APCost;
+        this.speedCost -= cardCost.SpeedCost;
+        this.HPCost -= cardCost.HPCost;
+        this.cardDisplay.updateCardDisplay(this);
     }
 }

@@ -12,7 +12,14 @@ public class unitHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     Canvas canvas;
 
     public void OnPointerEnter(PointerEventData pointerEventData) {
+        BattleManager bm = BattleManager.instance;
         Unit unit = this.GetComponentInParent<Unit>();
+        Card card = bm.gpManager.selectedCard;
+        if(card != null && unit.canBeSelected) {
+            Unit selectedUnit = bm.gpManager.selectedUnit;
+            if(selectedUnit != null) card.cardDisplay.updateCardDisplay(card, selectedUnit, unit);
+            else card.cardDisplay.updateCardDisplay(card, unit);
+        }
         if(unit.skills.Count > 0) {
             canvas.sortingOrder = 5;
             this.edManager.gameObject.SetActive(true);
@@ -25,7 +32,12 @@ public class unitHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
     }
 
     public void OnPointerExit(PointerEventData pointerEventData) {
-        if(this.edManager.gameObject.activeSelf) this.edManager.gameObject.SetActive(false);
+        BattleManager bm = BattleManager.instance;
+        Card card = bm.gpManager.selectedCard;
+        if(this.edManager.gameObject.activeSelf) {
+            this.edManager.gameObject.SetActive(false);
+            if(card != null) card.cardDisplay.updateCardDisplay(card);
+        } 
         canvas.sortingOrder = 1;
     }
 }

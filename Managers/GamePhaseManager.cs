@@ -45,6 +45,7 @@ public class GamePhaseManager {
                 if(this.hasSingleTarget(move)) {
                     this.highlightTargets(battleManager.enemyUnits);
                 } else {
+                    this.setTargets(move, new List<Unit>() { this.selectedUnit }, targetType.FRIENDLY);
                     this.setTargets(move, this.battleManager.enemyUnits, targetType.ALLENEMIES);
                     this.setTargets(move, this.battleManager.friendlyUnits, targetType.ALLFRIENDLIES);
                     this.GamePhase = phase.End;
@@ -53,9 +54,11 @@ public class GamePhaseManager {
                 break;
             case phase.End:
                 this.selectedUnit.addMove(move, this.selectedCard);
+                this.battleManager.artifactManager.eventTrigger(ArtifactTriggerType.Play, this.selectedUnit);
                 this.gamePhase = phase.Pick;
                 this.unHighlightTargets();
                 if(this.selectedCard.consumable) {
+                    this.battleManager.artifactManager.eventTrigger(ArtifactTriggerType.Consume, null);
                     this.battleManager.consumeCard(this.selectedCard);
                 } else {
                     this.battleManager.discardCard(this.selectedCard);
