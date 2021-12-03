@@ -137,6 +137,7 @@ public class Effect {
     ///<summary>returns a string</summary>
     public string generateDescription() {
         //stackcount effect type name 'to' target name
+        if(this.type == EffectType.Cleanse) return $"Cleanse {this.targetNames[(int)this.targetType]}.";
         return $"Apply {this.stackCount} <sprite name=\"{this.type.ToString()}\"> to {this.targetNames[(int)this.targetType]}.";
     }
     ///<summary>returns a string</summary>
