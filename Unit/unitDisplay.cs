@@ -29,7 +29,10 @@ public class unitDisplay : MonoBehaviour {
 
     ///<summary>Update effect icons</summary>
     public void updateIcons(List<Effect> effects, int index) {
-        if(effects.Count == 0) return;
+        if(effects.Count == 0) { 
+            this.clearIcons();
+            return;
+        }
         Effect effect = effects[index];
         if(!this.effectsOnUnit.ContainsKey(effect.type)) {
             GameObject obj = Instantiate(this.getIconPrefab(effect.type));

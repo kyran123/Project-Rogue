@@ -241,10 +241,12 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         this.effectsToAdd.Clear();
         if(this.hasEffect(EffectType.Bound)) this.moves = new List<Move>(){ this.moves[0] };
         foreach(Move move in this.moves) {
-            this.executeMove(move, 0);
+            if(move.damageTargets.Count > 0) this.executeMove(move, 0);
+            else this.applyMoveEffects(move);
             this.applyMoveCost(this, move);
         }
         this.addEffectsToFriendly();
+        this.display.updateIcons(this.effects, 0);
         this.removeTiles();
         this.removeMoves();
     }
@@ -287,6 +289,24 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
         if(index < move.damageTargets.Count) this.executeMove(move, index);
     }
 
+    public void applyMoveEffects(Move move) {
+        if(!this.hasEffect(EffectType.Silence)) {
+            foreach(Effect effect in move.effects) {
+                if(effect.targets.Count > 0) {
+                    foreach(Unit target in effect.targets) {
+                        target.addEffect(effect);
+                    }
+                } else {
+                    this.effectsToAdd.Add(effect);
+                }
+            }
+        }
+        if(this.hasEffect(EffectType.Stealth)) {
+            this.display.removeEffectIcon(this.getEffectByType(EffectType.Stealth));
+            this.effects.Remove(this.getEffectByType(EffectType.Stealth));
+        }   
+    }
+
     public void addEffectsToFriendly() {
         if(this.effectsToAdd.Count > 0) { 
             foreach(Effect effect in this.effectsToAdd) {
@@ -320,7 +340,11 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
     
     public void addEffect(Effect effect, bool appliedToItself = false) {
         if(this.hasEffect(EffectType.Immunity)) return;
-        if(effect.type == EffectType.Cleanse) return;
+        if(effect.type == EffectType.Cleanse) {
+            this.effects.Clear();
+            this.display.updateIcons(this.effects, 0);
+            return;
+        }
         if(this.hasEffect(effect.type)) {
             this.getEffectByType(effect.type).stackCount += effect.stackCount;
         } else {
