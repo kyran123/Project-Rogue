@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using TMPro;
 
 [System.Serializable]
 public class BattleManager : MonoBehaviour {
@@ -29,7 +30,9 @@ public class BattleManager : MonoBehaviour {
     public int drawCount = 0;
     public int actionPointsPerTurn = 2;
     public int drawPerTurn = 3;
+    public int turn = 0;
 
+    public TMP_Text turnTimer;
 
     #region BATTLE SETUP
 
@@ -94,6 +97,8 @@ public class BattleManager : MonoBehaviour {
     #region END TURN
 
     public void EndTurn() {
+        this.turn++;
+        this.turnTimer.text = this.turn.ToString();
         this.artifactManager.eventTrigger(ArtifactTriggerType.Turn, null, 0);
         this.handManager.discardCards();
         this.unitTurn();

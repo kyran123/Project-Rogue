@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 using TMPro;
 
 public class unitDisplay : MonoBehaviour {
@@ -42,9 +43,27 @@ public class unitDisplay : MonoBehaviour {
             this.effectsOnUnit.Add(effect.type, obj);
         }
         if(effect.stackCount < 1) this.removeEffectIcon(effect);
-        else this.effectsOnUnit[effect.type].GetComponent<Icon>().updateIcon(effect);
-        if(index < (effects.Count - 1)) {
+        else  {
+            GameObject effectObject = null;
+            Icon icon = null;
+            try {
+                effectObject = this.effectsOnUnit[effect.type];
+            } catch(Exception e) {
+                Debug.LogError("Getting effect object");
+            }
+            try {
+                icon = effectObject.GetComponent<Icon>();
+            } catch(Exception e) {
+                Debug.LogError("Getting icon class");
+            }
+            try {
+                icon.updateIcon(effect);
+            } catch(Exception e) {
+                Debug.LogError("Updating icon text");
+            }
+        }
             index++;
+        if(index < (effects.Count - 1)) {
             this.updateIcons(effects, index);
         }
     }

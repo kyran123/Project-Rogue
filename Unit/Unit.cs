@@ -268,22 +268,24 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
                 if(protectUnit != null) target = protectUnit;
             }
             this.dealDamage(target, move);
-            if(!this.hasEffect(EffectType.Silence)) {
-                foreach(Effect effect in move.effects) {
-                    if(effect.targetType == targetType.ENEMY) {
-                        if(this.isEnemy()) target.addEffect(effect);
-                        else this.effectsToAdd.Add(effect); 
+            if(target.Health > 0) {
+                if(!this.hasEffect(EffectType.Silence)) {
+                    foreach(Effect effect in move.effects) {
+                        if(effect.targetType == targetType.ENEMY) {
+                            if(this.isEnemy()) target.addEffect(effect);
+                            else this.effectsToAdd.Add(effect); 
+                        }
+                        if(effect.targetType == targetType.FRIENDLY) {
+                            if(this.isEnemy()) this.effectsToAdd.Add(effect);
+                            else target.addEffect(effect);
+                        }                    
                     }
-                    if(effect.targetType == targetType.FRIENDLY) {
-                        if(this.isEnemy()) this.effectsToAdd.Add(effect);
-                        else target.addEffect(effect);
-                    }                    
                 }
+                if(this.hasEffect(EffectType.Stealth)) {
+                    this.display.removeEffectIcon(this.getEffectByType(EffectType.Stealth));
+                    this.effects.Remove(this.getEffectByType(EffectType.Stealth));
+                } 
             }
-            if(this.hasEffect(EffectType.Stealth)) {
-                this.display.removeEffectIcon(this.getEffectByType(EffectType.Stealth));
-                this.effects.Remove(this.getEffectByType(EffectType.Stealth));
-            }   
         }
         index++;
         if(index < move.damageTargets.Count) this.executeMove(move, index);
@@ -349,7 +351,6 @@ public class Unit : MonoBehaviour, IPointerClickHandler {
             this.getEffectByType(effect.type).stackCount += effect.stackCount;
         } else {
             this.effects.Add(new Effect().instantiate(effect));
-
         }
         this.display.updateIcons(this.effects, 0);
         this.EventTrigger(TriggerType.Effect, effect.type);

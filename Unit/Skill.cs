@@ -54,7 +54,7 @@ public class Skill {
     }
 
     public void eventTrigger(TriggerType type, EffectType effectType, Unit target) {
-        if(type == TriggerType.Effect && effectType == this.trigger.effectType) {
+        if(this.trigger.type == type && type == TriggerType.Effect && effectType == this.trigger.effectType) {
             target.addEffect(effect);
         }
     }

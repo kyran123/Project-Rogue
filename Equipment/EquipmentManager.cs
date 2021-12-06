@@ -17,7 +17,7 @@ public class EquipmentManager : MonoBehaviour {
         foreach(EquipmentSlot equipmentSlot in this.equipmentSlots) {
             Equipment e = equipmentSlot.getEquipment();
             if(e != null) {
-                if(equipmentSlot.getEquipment().type == equipment.type) {
+                if(equipmentSlot.getEquipment().getType() == equipment.getType()) {
                     equipmentSlot.equipment = null;
                 }
             }
@@ -28,7 +28,16 @@ public class EquipmentManager : MonoBehaviour {
         foreach(EquipmentSlot equipmentSlot in this.equipmentSlots) {
             Equipment equipment = equipmentSlot.getEquipment();
             if(equipment != null) {
-                if(equipment.isHighlighted) equipmentSlot.getEquipment().use(targets, selectedUnit);
+                if(equipment.getHighlightStatus()) equipmentSlot.getEquipment().use(targets, selectedUnit);
+            }
+        }
+    }
+    
+    public void unHighlightEquipment() {
+        foreach(EquipmentSlot equipmentSlot in this.equipmentSlots) {
+            Equipment equipment = equipmentSlot.getEquipment();
+            if(equipment != null) {
+                if(equipment.getHighlightStatus()) equipment.setHighlight(false);
             }
         }
     }
